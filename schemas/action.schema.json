@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inputd.local/schemas/action.schema.json",
+  "title": "inputd Action",
+  "type": "object",
+  "required": ["type"],
+  "properties": {
+    "type": { "enum": ["mouse_move_relative", "mouse_move_absolute", "mouse_button", "mouse_wheel", "key", "text", "wait", "release_all", "barrier"] },
+    "dx": { "type": "integer", "minimum": -32768, "maximum": 32768 },
+    "dy": { "type": "integer", "minimum": -32768, "maximum": 32768 },
+    "x": { "type": "integer" },
+    "y": { "type": "integer" },
+    "duration_ms": { "type": "integer", "minimum": 0, "maximum": 30000 },
+    "coalesce": { "type": "boolean" },
+    "button": { "enum": ["left", "right", "middle", "x1", "x2"] },
+    "action": { "type": "string" },
+    "code": { "type": "string" },
+    "text": { "type": "string", "maxLength": 16384 },
+    "delta_x": { "type": "integer" },
+    "delta_y": { "type": "integer" }
+  },
+  "additionalProperties": false
+}

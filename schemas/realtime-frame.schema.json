@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inputd.local/schemas/realtime-frame.schema.json",
+  "title": "inputd Realtime ActionFrame",
+  "type": "object",
+  "required": ["version", "sequence", "timestamp_us", "deadline_us", "keyboard", "mouse"],
+  "properties": {
+    "version": { "const": "1.0" },
+    "sequence": { "type": "integer", "minimum": 0 },
+    "timestamp_us": { "type": "integer", "minimum": 0 },
+    "deadline_us": { "type": "integer", "minimum": 0 },
+    "keyboard": {
+      "type": "object",
+      "required": ["held"],
+      "properties": { "held": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "type": "string" } } },
+      "additionalProperties": false
+    },
+    "mouse": {
+      "type": "object",
+      "required": ["dx", "dy", "held_buttons", "wheel_x", "wheel_y"],
+      "properties": {
+        "dx": { "type": "integer", "minimum": -32768, "maximum": 32768 },
+        "dy": { "type": "integer", "minimum": -32768, "maximum": 32768 },
+        "held_buttons": { "type": "array", "maxItems": 5, "uniqueItems": true, "items": { "enum": ["left", "right", "middle", "x1", "x2"] } },
+        "wheel_x": { "type": "integer" },
+        "wheel_y": { "type": "integer" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

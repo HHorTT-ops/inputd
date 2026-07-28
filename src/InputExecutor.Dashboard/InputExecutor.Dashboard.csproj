@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>inputd-dashboard</AssemblyName>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\InputExecutor.Core\InputExecutor.Core.csproj" />
+    <ProjectReference Include="..\InputExecutor.Scheduler\InputExecutor.Scheduler.csproj" />
+    <ProjectReference Include="..\InputExecutor.Windows\InputExecutor.Windows.csproj" />
+  </ItemGroup>
+</Project>

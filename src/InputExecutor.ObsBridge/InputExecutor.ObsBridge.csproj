@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>inputd-obs-bridge</AssemblyName>
+    <RootNamespace>InputExecutor.ObsBridge</RootNamespace>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\InputExecutor.Core\InputExecutor.Core.csproj" />
+    <ProjectReference Include="..\InputExecutor.Windows\InputExecutor.Windows.csproj" />
+  </ItemGroup>
+</Project>
