@@ -87,7 +87,7 @@ Dashboard の既定ホットキー：
 
 ホットキーは変更できます。記録の開始／停止に使った境界ホットキーは最終軌跡から除外されます。高頻度入力は独立キューと永続化先へ書き込まれ、UI は約 30 FPS の集約スナップショットだけを読むため、表示更新が遅くても学習イベントは欠落しません。
 
-完成した記録は、連番と終端状態を検証し、元の相対タイミングで再生できます。また、20/40/60 Hz または任意の固定レートへ変換し、イベント総数と `dx/dy/wheel` の集計値を検証できます。[記録と再生](docs/raw-input-replay.md)および[学習データ](docs/training-data.md)を参照してください。
+完成した記録は、連番と終端状態を検証し、元の相対タイミングで再生できます。また、20/40/60 Hz または任意の固定レートへ変換し、イベント総数と `dx/dy/wheel` の集計値を検証できます。[記録と再生](docs/raw-input-replay.ja.md)および[学習データ](docs/training-data.ja.md)を参照してください。
 
 ## ゲーム内の相対マウス
 
@@ -112,7 +112,7 @@ recording.input.jsonl
 recording.input.jsonl.manifest.json
 ```
 
-異常終了したデータは `*.partial` のまま保持され、完全な学習軌跡として扱われません。[OBS ガイド](docs/obs.md)を参照してください。
+異常終了したデータは `*.partial` のまま保持され、完全な学習軌跡として扱われません。[OBS ガイド](docs/obs.ja.md)を参照してください。
 
 ## API と安全性
 
@@ -125,7 +125,7 @@ recording.input.jsonl.manifest.json
 - リアルタイムフレームは `sequence`、単調時刻、`deadline`、held keys/buttons、相対 `dx/dy`、ホイール状態を保持。
 - 保留中の旧フレームは新フレームで置換され、期限切れフレームは破棄。
 
-詳細は [protocol.md](docs/protocol.md) と [safety.md](docs/safety.md) を参照してください。
+詳細は [protocol.ja.md](docs/protocol.ja.md) と [safety.ja.md](docs/safety.ja.md) を参照してください。
 
 ## テスト
 
@@ -140,7 +140,7 @@ $env:INPUTD_RUN_WIN32_TESTS='1'
 dotnet test tests/InputExecutor.Tests -c Release --filter Category=WindowsIntegration
 ```
 
-全テスト項目と実ゲーム受け入れ手順は [testing.md](docs/testing.md) を参照してください。
+全テスト項目と実ゲーム受け入れ手順は [testing.ja.md](docs/testing.ja.md) を参照してください。
 
 ## エージェント連携
 
@@ -150,13 +150,13 @@ Codex、OpenClaw、MCP アダプターは別リポジトリで管理します：
 
 ## ドキュメント
 
-- [アーキテクチャ](docs/architecture.md)
-- [Dashboard](docs/dashboard.md)
-- [プロトコル](docs/protocol.md)
-- [安全性](docs/safety.md)
-- [学習データ](docs/training-data.md)
-- [OBS](docs/obs.md)
-- [テスト](docs/testing.md)
+- [アーキテクチャ](docs/architecture.ja.md)
+- [Dashboard](docs/dashboard.ja.md)
+- [プロトコル](docs/protocol.ja.md)
+- [安全性](docs/safety.ja.md)
+- [学習データ](docs/training-data.ja.md)
+- [OBS](docs/obs.ja.md)
+- [テスト](docs/testing.ja.md)
 
 ## ライセンス
 

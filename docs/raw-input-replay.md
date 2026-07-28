@@ -1,5 +1,7 @@
 # 鼠标回放兼容后端
 
+[简体中文](raw-input-replay.md) | [English](raw-input-replay.en.md) | [日本語](raw-input-replay.ja.md)
+
 ## 为什么桌面光标会动，游戏视角却不动
 
 操作记录中的鼠标 `dx/dy` 是物理 Raw Input count。Windows `SendInput` 的相对移动可以改变桌面光标位置，普通 Raw Input 窗口也能收到精确增量；但部分游戏不会把这条 `SendInput` 相对移动路径用于镜头。默认 Dashboard 回放因此只把相对移动切换到 Win32 `mouse_event`，并继续以相同的有符号 count、相对时间和 held 状态执行。实际兼容性仍需在离线或目标明确允许的环境中验证。

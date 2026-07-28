@@ -1,5 +1,7 @@
 # Dashboard 使用说明
 
+[简体中文](dashboard.md) | [English](dashboard.en.md) | [日本語](dashboard.ja.md)
+
 ## 直接启动
 
 需要 Windows x64 和 .NET 10 Desktop Runtime（安装 .NET 10 SDK 也已包含运行环境）。先发布：

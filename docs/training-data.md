@@ -1,5 +1,7 @@
 # 固定帧率训练数据
 
+[简体中文](training-data.md) | [English](training-data.en.md) | [日本語](training-data.ja.md)
+
 `inputd` 可以把 Dashboard 或 Raw Input recorder 生成的事件级 JSONL，重采样为固定频率的训练 `ActionFrame`。内置快捷频率为 20、40、60Hz，也支持 1–1000Hz 的任意整数频率。
 
 ## 从界面生成

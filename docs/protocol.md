@@ -1,10 +1,18 @@
-# Protocol v1
+# 协议 v1
 
-All JSON uses UTF-8. Durations are milliseconds. `timestamp_us`, `deadline_us`, and response `monotonic_us` use Windows monotonic uptime microseconds (`Environment.TickCount64 * 1000`), so clients on the same machine can compare deadlines without wall-clock synchronization.
+[简体中文](protocol.md) | [English](protocol.en.md) | [日本語](protocol.ja.md)
 
-## Bootstrap and session tokens
+所有 JSON 使用 UTF-8，时长使用毫秒。`timestamp_us`、`deadline_us` 和响应中的 `monotonic_us` 使用 Windows 单调运行时间微秒（`Environment.TickCount64 * 1000`），同一台电脑上的客户端无需同步墙上时钟即可比较 deadline。
 
-Creating a session requires `X-Inputd-Access-Token`. By default this token is read from `%LOCALAPPDATA%\inputd\access.token`. Every successful create response returns a separate `session_id` and `capability_token`. Send that capability as `X-Inputd-Token` or `Authorization: Bearer` for subsequent HTTP calls.
+## 启动令牌与会话令牌
+
+创建会话需要 `X-Inputd-Access-Token`。默认令牌位于：
+
+```text
+%LOCALAPPDATA%\inputd\access.token
+```
+
+每次成功创建会话都会返回独立的 `session_id` 和 `capability_token`。后续 HTTP 请求通过 `X-Inputd-Token` 或 `Authorization: Bearer` 发送 capability token。
 
 ## Command API
 
@@ -24,13 +32,13 @@ POST   /v1/sessions/{id}/recording/stop
 DELETE /v1/sessions/{id}
 ```
 
-Session creation may use `bind_to_foreground: true`, an explicit `target`, or `target_process_id`. PID binding resolves the process main HWND and freezes HWND/PID/path/start-time identity. `/focus` explicitly activates only that bound HWND; Arm and every injected action still perform the normal foreground check.
+创建会话可使用 `bind_to_foreground: true`、显式 `target` 或 `target_process_id`。PID 绑定会解析主 HWND，并固定 HWND、PID、路径和进程启动时间。`/focus` 只激活已经绑定的 HWND；Arm 和每个输入动作仍会检查前台窗口。
 
-`snapshot` returns `image/png`. Frame ID, virtual-desktop origin, size, and capture time are returned as `X-Inputd-*` headers. Screenshot-relative adapters must translate `(x,y)` using the returned origin and reject stale frame IDs.
+`snapshot` 返回 `image/png`。Frame ID、虚拟桌面原点、尺寸和采集时间通过 `X-Inputd-*` 响应头返回。基于截图坐标的适配器必须使用返回的原点换算 `(x,y)`，并拒绝过期 Frame ID。
 
-Raw Input recording is session-scoped and persisted in the same JSONL trajectory sink as command/realtime actions. `include_executor_events` is false by default. When true, diagnostic low-level hooks persist inputd-tagged injection separately as `*_hook_injected`; these records are never represented as physical Raw Input.
+Raw Input 录制属于会话范围，与 Command/Realtime 动作使用相同的 JSONL sink。`include_executor_events` 默认为 false。启用后，诊断 Hook 只把带 inputd 标记的注入保存为 `*_hook_injected`，不会伪装成物理 Raw Input。
 
-Example command:
+Command 示例：
 
 ```json
 {
@@ -47,18 +55,18 @@ Example command:
 }
 ```
 
-Supported action types are `mouse_move_relative`, `mouse_move_absolute`, `mouse_button`, `mouse_wheel`, `key`, `text`, `wait`, `release_all`, and `barrier`. Physical keys use DOM `KeyboardEvent.code`-style names and are mapped to Windows scan codes. Text uses Unicode `KEYEVENTF_UNICODE` and is separate from physical game keys.
+动作类型包括 `mouse_move_relative`、`mouse_move_absolute`、`mouse_button`、`mouse_wheel`、`key`、`text`、`wait`、`release_all` 和 `barrier`。物理键使用类似 DOM `KeyboardEvent.code` 的名称并映射到 Windows 扫描码；文本单独使用 Unicode `KEYEVENTF_UNICODE`。
 
 ## Realtime WebSocket
 
-Connect to:
+连接：
 
 ```text
 ws://127.0.0.1:17841/v1/realtime?session_id={id}
 Authorization: Bearer {capability_token}
 ```
 
-Send state frames continuously:
+持续发送当前期望状态帧：
 
 ```json
 {
@@ -77,6 +85,6 @@ Send state frames continuously:
 }
 ```
 
-The state machine diffs held sets against the previous executed frame. Responses have `status` equal to `executed`, `stale`, `expired`, `superseded`, or `rejected`. Closing the WebSocket disarms the session and releases all held input.
+状态机根据上一个已执行帧计算 held 集合差异。响应状态为 `executed`、`stale`、`expired`、`superseded` 或 `rejected`。关闭 WebSocket 会 Disarm 会话并释放全部 held 输入。
 
-Schemas are in the repository `schemas` directory.
+JSON Schema 位于仓库的 `schemas` 目录。

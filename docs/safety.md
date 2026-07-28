@@ -1,36 +1,38 @@
-# Safety and failure behavior
+# 安全与故障行为
 
-## Target identity
+[简体中文](safety.md) | [English](safety.en.md) | [日本語](safety.ja.md)
 
-Creating a session captures or accepts a target HWND and verifies its PID, executable name/path, and process start time. An empty `allowed_processes` request becomes a one-entry allowlist containing the bound target name. Every action requires the exact target HWND to be foreground.
+## 目标身份
 
-UIPI can prevent a normal-integrity `inputd` from injecting into an elevated target. `SendInput` may report zero without a Win32 error in that case; the backend returns `INPUT_INJECTION_FAILED` and disarms.
+创建会话时，inputd 会捕获或接受目标 HWND，并验证其 PID、可执行文件名/路径和进程启动时间。若请求中的 `allowed_processes` 为空，服务会建立只包含绑定目标进程名的单项白名单。每个动作都要求精确绑定的 HWND 位于前台。
 
-## Stop conditions
+Windows UIPI 可能阻止普通完整性级别的 inputd 向管理员权限目标注入。此时 `SendInput` 可能返回零但不设置 Win32 错误；后端会返回 `INPUT_INJECTION_FAILED` 并 Disarm 会话。
 
-All of these cancel pending work, release tracked keys/buttons, clear queues, and revoke the arm lease:
+## 停止条件
 
-- realtime WebSocket disconnect;
-- realtime lease timeout;
-- target focus/identity loss;
-- bound client process exit or PID reuse;
-- arm expiration;
-- command cancellation or execution failure;
-- explicit disarm or emergency release;
-- `Ctrl+Alt+F12`;
-- graceful application shutdown, process-exit callback, or unhandled-exception callback.
+以下情况都会取消待执行工作、释放状态机记录的键和按钮、清空队列，并撤销 Arm 租约：
 
-An operating-system hard kill, power loss, or runtime corruption cannot be made perfectly recoverable by user-mode software. The process-exit and unhandled-exception paths are best effort and wait up to two seconds for the scheduler thread to emit releases.
+- Realtime WebSocket 断开；
+- Realtime 租约超时；
+- 目标焦点或身份丢失；
+- 绑定客户端退出或 PID 被复用；
+- Arm 到期；
+- Command 取消或执行失败；
+- 显式 Disarm 或紧急释放；
+- `Ctrl+Alt+F12`；
+- 正常关闭、进程退出回调或未处理异常回调。
 
-## Limits
+操作系统强制终止、断电或运行时损坏无法由用户态软件完全恢复。进程退出和未处理异常路径属于尽最大努力处理，最多等待调度器线程两秒以发出释放事件。
 
-- command FIFO capacity: 64;
-- command actions: 1–256;
-- realtime pending capacity: 1;
-- relative delta: ±32768 counts per axis;
-- held keys: 32;
-- held buttons: 5;
-- text: 16,384 UTF-16 code units;
-- arm duration: 1–3600 seconds;
-- realtime lease: 50–10,000 ms;
-- WebSocket message: 64 KiB.
+## 限制
+
+- Command FIFO 容量：64；
+- 单个 Command 动作数：1–256；
+- Realtime 待执行容量：1；
+- 单轴相对位移：±32768 counts；
+- held keys：32；
+- held buttons：5；
+- 文本：16,384 个 UTF-16 code units；
+- Arm 时长：1–3600 秒；
+- Realtime 租约：50–10,000 ms；
+- WebSocket 消息：64 KiB。

@@ -87,7 +87,7 @@ Default Dashboard hotkeys:
 
 Hotkeys are configurable. Recording-boundary hotkeys are removed from the final trajectory. The recorder writes high-rate input through an independent queue and durable sink; the UI reads only a roughly 30 FPS coalesced snapshot, so a slow UI refresh does not drop training events.
 
-Completed recordings can be validated, replayed at their original relative timing, or converted to 20/40/60 Hz and custom fixed-rate training frames. Conversion verifies event totals and aggregate `dx/dy/wheel` values. See [recording and replay](docs/raw-input-replay.md) and [training data](docs/training-data.md).
+Completed recordings can be validated, replayed at their original relative timing, or converted to 20/40/60 Hz and custom fixed-rate training frames. Conversion verifies event totals and aggregate `dx/dy/wheel` values. See [recording and replay](docs/raw-input-replay.en.md) and [training data](docs/training-data.en.md).
 
 ## Relative mouse movement in games
 
@@ -112,7 +112,7 @@ recording.input.jsonl
 recording.input.jsonl.manifest.json
 ```
 
-Interrupted data remains `*.partial` and is never reported as a complete training trajectory. See the [OBS guide](docs/obs.md).
+Interrupted data remains `*.partial` and is never reported as a complete training trajectory. See the [OBS guide](docs/obs.en.md).
 
 ## API and safety
 
@@ -125,7 +125,7 @@ Interrupted data remains `*.partial` and is never reported as a complete trainin
 - Realtime frames carry `sequence`, monotonic timestamp, `deadline`, held keys/buttons, relative `dx/dy`, and wheel state.
 - New frames supersede pending old frames; expired frames are discarded.
 
-See [protocol.md](docs/protocol.md) and [safety.md](docs/safety.md).
+See [protocol.en.md](docs/protocol.en.md) and [safety.en.md](docs/safety.en.md).
 
 ## Tests
 
@@ -140,7 +140,7 @@ $env:INPUTD_RUN_WIN32_TESTS='1'
 dotnet test tests/InputExecutor.Tests -c Release --filter Category=WindowsIntegration
 ```
 
-See [testing.md](docs/testing.md) for the full test matrix and real-game acceptance procedure.
+See [testing.en.md](docs/testing.en.md) for the full test matrix and real-game acceptance procedure.
 
 ## Agent integrations
 
@@ -150,13 +150,13 @@ Codex, OpenClaw, and MCP adapters are maintained separately:
 
 ## Documentation
 
-- [Architecture](docs/architecture.md)
-- [Dashboard](docs/dashboard.md)
-- [Protocol](docs/protocol.md)
-- [Safety](docs/safety.md)
-- [Training data](docs/training-data.md)
-- [OBS](docs/obs.md)
-- [Testing](docs/testing.md)
+- [Architecture](docs/architecture.en.md)
+- [Dashboard](docs/dashboard.en.md)
+- [Protocol](docs/protocol.en.md)
+- [Safety](docs/safety.en.md)
+- [Training data](docs/training-data.en.md)
+- [OBS](docs/obs.en.md)
+- [Testing](docs/testing.en.md)
 
 ## License
 
