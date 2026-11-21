@@ -1,0 +1,11 @@
+{
+  "compared_at_utc": "2026-11-21T13:48:12.2001575\u002B00:00",
+  "before_captured_at_utc": "2026-11-21T13:40:07.2168166\u002B00:00",
+  "after_captured_at_utc": "2026-11-21T13:48:11.3413799\u002B00:00",
+  "before_count": 21,
+  "after_count": 21,
+  "added": [],
+  "removed": [],
+  "changed": [],
+  "caveat": "Added/removed/changed devices are correlation candidates only. VHF_DEVICE_CANDIDATE / VIRTUAL_HID_CANDIDATE must NOT be asserted as NetEase UU ownership."
+}

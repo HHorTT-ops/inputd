@@ -1,0 +1,8 @@
+{
+  "label": "test-b-uu-left-clicks",
+  "controller_platform": "UNKNOWN",
+  "seconds": 10,
+  "stimulus": "none",
+  "prompt": "LEFT click 2-3 times",
+  "note": "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+}

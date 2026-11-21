@@ -1,0 +1,11 @@
+{
+  "label": "test-e-untagged-mouse-event-phase12",
+  "status": "NO_RULE",
+  "reason": "No stimulus verdict rule for label",
+  "evidence": {
+    "label": "test-e-untagged-mouse-event-phase12",
+    "raw": 24,
+    "hooks": 24
+  },
+  "rule": "PASS only when required actions are evidenced; ZERO/contaminated/incomplete never PASS."
+}

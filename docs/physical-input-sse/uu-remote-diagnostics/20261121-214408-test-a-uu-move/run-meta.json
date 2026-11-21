@@ -1,0 +1,8 @@
+{
+  "label": "test-a-uu-move",
+  "controller_platform": "UNKNOWN",
+  "seconds": 12,
+  "stimulus": "none",
+  "prompt": "MOVE ONLY no wheel no click",
+  "note": "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+}

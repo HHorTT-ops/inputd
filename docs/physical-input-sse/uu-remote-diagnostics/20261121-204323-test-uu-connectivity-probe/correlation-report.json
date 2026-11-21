@@ -1,0 +1,215 @@
+{
+  "stimulus_label": "test-uu-connectivity-probe",
+  "note": "Results are scoped to this stimulus only; do not attribute TEST E/F findings to UU.",
+  "raw_events": 517,
+  "hook_events": 517,
+  "matched_one_to_one": 4,
+  "ambiguous": 60,
+  "unmatched_raw": 453,
+  "matched_near_injected_hook": 4,
+  "stats": {
+    "RawEvents": 517,
+    "HookEvents": 517,
+    "RawDropped": 0,
+    "HookDropped": 0,
+    "RawAbsolute": 453,
+    "RawRelative": 64,
+    "RawHDeviceZero": 517,
+    "RawHDeviceNonZero": 0,
+    "HookInjected": 517,
+    "HookLowerIlInjected": 0,
+    "HookExtraInfoExecutorTag": 0
+  },
+  "sample_pairs": [
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29584093000,
+        "Kind": "other",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 0,
+        "Dy": 0,
+        "ScreenX": 629,
+        "ScreenY": 603
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29584125000,
+        "Kind": "other",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 0,
+        "Dy": 0,
+        "ScreenX": 629,
+        "ScreenY": 603
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29584921000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 2,
+        "Dy": -1,
+        "ScreenX": 631,
+        "ScreenY": 602
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29584921000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 4,
+        "Dy": -3,
+        "ScreenX": 635,
+        "ScreenY": 599
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29584921000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 6,
+        "Dy": -7,
+        "ScreenX": 641,
+        "ScreenY": 592
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29584937000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 9,
+        "Dy": -11,
+        "ScreenX": 650,
+        "ScreenY": 581
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29584953000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 11,
+        "Dy": -15,
+        "ScreenX": 661,
+        "ScreenY": 566
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29584953000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 13,
+        "Dy": -18,
+        "ScreenX": 674,
+        "ScreenY": 548
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29584968000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 29,
+        "Dy": -39,
+        "ScreenX": 703,
+        "ScreenY": 509
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29584984000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 14,
+        "Dy": -20,
+        "ScreenX": 717,
+        "ScreenY": 489
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29584984000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 13,
+        "Dy": -17,
+        "ScreenX": 730,
+        "ScreenY": 472
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29585000000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 16,
+        "Dy": -19,
+        "ScreenX": 746,
+        "ScreenY": 453
+      },
+      "hook": null
+    }
+  ],
+  "answers_preliminary": {
+    "scoped_to_stimulus": "test-uu-connectivity-probe",
+    "llmhf_injected_seen_in_matches": true,
+    "hDevice_always_zero": true,
+    "absolute_vs_relative": {
+      "absolute": 453,
+      "relative": 64
+    },
+    "note": "Cross-check only within this stimulus; do not conclude from a single metric."
+  }
+}

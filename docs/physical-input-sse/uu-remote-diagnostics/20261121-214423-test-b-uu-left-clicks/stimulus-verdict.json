@@ -1,0 +1,9 @@
+{
+  "label": "test-b-uu-left-clicks",
+  "status": "FAIL",
+  "reason": "MISSING_LEFT: Need LBUTTON down\u002Bup; down=0 up=0",
+  "evidence": {
+    "code": "MISSING_LEFT"
+  },
+  "rule": "PASS only when required actions are evidenced; ZERO/contaminated/incomplete never PASS."
+}

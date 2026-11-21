@@ -1,0 +1,8 @@
+{
+  "label": "retest-uu-connectivity-probe",
+  "controller_platform": "UNKNOWN",
+  "seconds": 10,
+  "stimulus": "none",
+  "prompt": "Move mouse via UU NOW to confirm link.",
+  "note": "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+}

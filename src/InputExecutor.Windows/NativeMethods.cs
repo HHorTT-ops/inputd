@@ -27,10 +27,22 @@ internal static partial class NativeMethods
     internal const uint KEYEVENTF_KEYUP = 0x0002;
     internal const uint KEYEVENTF_UNICODE = 0x0004;
     internal const uint KEYEVENTF_SCANCODE = 0x0008;
+    internal const int SM_CXSCREEN = 0;
+    internal const int SM_CYSCREEN = 1;
+    internal const int SM_CMONITORS = 80;
+    internal const int SM_REMOTESESSION = 0x1000;
+    internal const int SM_REMOTECONTROL = 0x2001;
     internal const int SM_XVIRTUALSCREEN = 76;
     internal const int SM_YVIRTUALSCREEN = 77;
     internal const int SM_CXVIRTUALSCREEN = 78;
     internal const int SM_CYVIRTUALSCREEN = 79;
+    internal const uint RID_HEADER = 0x10000005;
+    internal const uint RIDI_DEVICENAME = 0x20000007;
+    internal const uint RIDI_DEVICEINFO = 0x2000000B;
+    internal const int LLMHF_INJECTED = 0x00000001;
+    internal const int LLMHF_LOWER_IL_INJECTED = 0x00000002;
+    internal const ushort MouseMoveAbsoluteFlag = 0x0001;
+    internal const ushort MouseVirtualDesktopFlag = 0x0002;
     internal const uint MOD_ALT = 0x0001;
     internal const uint MOD_CONTROL = 0x0002;
     internal const uint MOD_NOREPEAT = 0x4000;
@@ -285,9 +297,92 @@ internal static partial class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool GetCursorPos(out POINT point);
 
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetPhysicalCursorPos(out POINT point);
+
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool GetWindowRect(IntPtr hWnd, out RECT rect);
+
+    [LibraryImport("user32.dll")]
+    internal static partial IntPtr GetDesktopWindow();
+
+    [LibraryImport("user32.dll")]
+    internal static partial int GetSystemMetricsForDpi(int nIndex, uint dpi);
+
+    [LibraryImport("user32.dll")]
+    internal static partial uint GetDpiForSystem();
+
+    [LibraryImport("user32.dll")]
+    internal static partial IntPtr GetThreadDpiAwarenessContext();
+
+    [LibraryImport("user32.dll")]
+    internal static partial int GetAwarenessFromDpiAwarenessContext(IntPtr value);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool LogicalToPhysicalPointForPerMonitorDPI(IntPtr hWnd, ref POINT point);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool PhysicalToLogicalPointForPerMonitorDPI(IntPtr hWnd, ref POINT point);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr lprcClip, MonitorEnumProc callback, IntPtr dwData);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFOEX info);
+
+    [DllImport("shcore.dll")]
+    internal static extern int GetDpiForMonitor(IntPtr hMonitor, MONITOR_DPI_TYPE dpiType, out uint dpiX, out uint dpiY);
+
+    [DllImport("shcore.dll")]
+    internal static extern int GetProcessDpiAwareness(IntPtr hProcess, out PROCESS_DPI_AWARENESS value);
+
+    [LibraryImport("kernel32.dll")]
+    internal static partial IntPtr GetCurrentProcess();
+
+    internal const int MONITORINFOF_PRIMARY = 1;
+
+    internal enum PROCESS_DPI_AWARENESS
+    {
+        Process_DPI_Unaware = 0,
+        Process_System_DPI_Aware = 1,
+        Process_Per_Monitor_DPI_Aware = 2
+    }
+
+    internal enum MONITOR_DPI_TYPE
+    {
+        MDT_Effective_DPI = 0,
+        MDT_Angular_DPI = 1,
+        MDT_Raw_DPI = 2
+    }
+
+    internal enum DPI_AWARENESS
+    {
+        DPI_AWARENESS_INVALID = -1,
+        DPI_AWARENESS_UNAWARE = 0,
+        DPI_AWARENESS_SYSTEM_AWARE = 1,
+        DPI_AWARENESS_PER_MONITOR_AWARE = 2
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct MONITORINFOEX
+    {
+        internal int cbSize;
+        internal RECT rcMonitor;
+        internal RECT rcWork;
+        internal uint dwFlags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        internal string szDevice;
+    }
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal delegate bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
 
     [LibraryImport("kernel32.dll", EntryPoint = "GetModuleHandleW", StringMarshalling = StringMarshalling.Utf16)]
     internal static partial IntPtr GetModuleHandle(string? moduleName);
@@ -312,6 +407,85 @@ internal static partial class NativeMethods
 
     [LibraryImport("user32.dll", SetLastError = true)]
     internal static partial uint GetRawInputData(IntPtr rawInput, uint command, IntPtr data, ref uint size, uint headerSize);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern uint GetRawInputDeviceList([Out] RAWINPUTDEVICELIST[]? devices, ref uint count, uint size);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    internal static extern uint GetRawInputDeviceInfo(IntPtr device, uint command, IntPtr data, ref uint size);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool ProcessIdToSessionId(uint processId, out uint sessionId);
+
+    [DllImport("wtsapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool WTSQuerySessionInformation(IntPtr server, int sessionId, WTS_INFO_CLASS infoClass, out IntPtr buffer, out int bytesReturned);
+
+    [DllImport("wtsapi32.dll")]
+    internal static extern void WTSFreeMemory(IntPtr memory);
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RAWINPUTDEVICELIST
+    {
+        internal IntPtr hDevice;
+        internal uint dwType;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    internal struct RID_DEVICE_INFO
+    {
+        [FieldOffset(0)] internal uint cbSize;
+        [FieldOffset(4)] internal uint dwType;
+        [FieldOffset(8)] internal RID_DEVICE_INFO_MOUSE mouse;
+        [FieldOffset(8)] internal RID_DEVICE_INFO_KEYBOARD keyboard;
+        [FieldOffset(8)] internal RID_DEVICE_INFO_HID hid;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RID_DEVICE_INFO_MOUSE
+    {
+        internal uint dwId;
+        internal uint dwNumberOfButtons;
+        internal uint dwSampleRate;
+        internal int fHasHorizontalWheel;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RID_DEVICE_INFO_KEYBOARD
+    {
+        internal uint dwType;
+        internal uint dwSubType;
+        internal uint dwKeyboardMode;
+        internal uint dwNumberOfFunctionKeys;
+        internal uint dwNumberOfIndicators;
+        internal uint dwNumberOfKeysTotal;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RID_DEVICE_INFO_HID
+    {
+        internal uint dwVendorId;
+        internal uint dwProductId;
+        internal uint dwVersionNumber;
+        internal ushort usUsagePage;
+        internal ushort usUsage;
+    }
+
+    internal enum WTS_INFO_CLASS
+    {
+        WTSClientProtocolType = 16
+    }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    internal static extern IntPtr LoadLibrary(string lpFileName);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
+    internal static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal delegate bool WtsIsRemoteSessionDelegate();
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     internal static extern IntPtr SetWindowsHookEx(int hookId, HookProcedure procedure, IntPtr module, uint threadId);

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using InputExecutor.Core.Abstractions;
 using InputExecutor.Core.Execution;
@@ -44,8 +44,12 @@ builder.Services.AddSingleton<InputScheduler>(services => new InputScheduler(
     services.GetRequiredService<IMonotonicClock>(),
     new InputSchedulerOptions(CommandQueueCapacity: 64, MaxRealtimeBurst: 8)));
 builder.Services.AddSingleton<InputCoordinator>();
-builder.Services.AddSingleton<IHumanInputRecorder, WindowsRawInputRecorder>();
+builder.Services.AddSingleton<WindowsRawInputRecorder>();
+builder.Services.AddSingleton<IHumanInputRecorder>(sp => sp.GetRequiredService<WindowsRawInputRecorder>());
+builder.Services.AddSingleton<IPhysicalInputObservationSource>(sp => new WindowsPhysicalInputObservationSource(sp.GetRequiredService<WindowsRawInputRecorder>()));
+builder.Services.AddSingleton<PhysicalMouseEventHub>();
 builder.Services.AddSingleton<ServiceAccessToken>();
+builder.Services.AddHostedService<PhysicalMouseSseHostedService>();
 builder.Services.AddHostedService<WatchdogWorker>();
 builder.Services.AddHostedService<EmergencyStopWorker>();
 
@@ -139,6 +143,8 @@ app.MapDelete("/v1/sessions/{sessionId}", async (string sessionId, HttpRequest r
     return Results.NoContent();
 });
 
+app.MapGet("/v1/physical-input/events", PhysicalMouseSseEndpoint.HandleAsync);
+
 // Realtime frames are accepted only over a persistent WebSocket. There is deliberately no HTTP realtime POST route.
 app.Map("/v1/realtime", RealtimeWebSocketHandler.HandleAsync);
 
@@ -171,3 +177,4 @@ static void RequireServiceAccess(HttpRequest request, ServiceAccessToken accessT
 }
 
 public partial class Program { }
+

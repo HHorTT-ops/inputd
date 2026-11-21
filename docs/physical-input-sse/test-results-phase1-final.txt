@@ -1,0 +1,18 @@
+﻿inputd Phase 1 final — Release test results
+Date: 2026-11-21
+Command: dotnet build InputExecutor.sln -c Release && dotnet test InputExecutor.sln -c Release --no-build
+SDK: 10.0.404 (portable .dotnet10)
+
+Build: PASS (0 warnings, 0 errors)
+
+InputExecutor.IntegrationTests.dll
+  Passed: 14
+  Failed: 0
+  Skipped: 0
+
+InputExecutor.Tests.dll
+  Passed: 43
+  Failed: 0
+  Skipped: 13 (existing WindowsSendInput / trajectory replay environment skips)
+
+Overall: PASS

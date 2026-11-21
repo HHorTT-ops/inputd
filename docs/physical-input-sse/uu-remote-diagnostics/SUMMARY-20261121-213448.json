@@ -1,0 +1,852 @@
+﻿{
+    "title":  "UU Remote Input Diagnostics Summary",
+    "task":  "INPUTD-PHASE1.2-DPI-COORDINATE-ALIGNMENT-001",
+    "controller_platform":  "UNKNOWN",
+    "generated_at":  "2026-11-21T21:34:48.2882231+08:00",
+    "source_classes_unchanged":  [
+                                     "EXECUTOR_INJECTED",
+                                     "DEVICE_ATTRIBUTED",
+                                     "UNATTRIBUTED"
+                                 ],
+    "external_input_activity_note":  "Any non-EXECUTOR_INJECTED external input is a conservative pause candidate for Qwen; do not claim it is human.",
+    "sm_remote_session_caveat":  "SM_REMOTESESSION=false does not prove absence of NetEase UU / third-party remote control.",
+    "coordinate_note":  "Raw metrics-space vs WH_MOUSE_LL may differ under DPI virtualization; alignment uses measured scale / LogicalToPhysical 鈥?never hardcoded 2x.",
+    "correlation_note":  "Prior Founder captures had absolute moves classified as other and unmatched; Phase 1.2 treats absolute zero-delta as move and aligns coords before match.",
+    "phase12_status":  {
+                           "dpi_diagnostics":  "implemented",
+                           "absolute_mapping_alignment":  "implemented",
+                           "correlation_fix":  "implemented (unit-tested); Founder UU retest pending",
+                           "manual_test_prompts":  "hardened A/B-left/B-right/C-v/C-h/D/G",
+                           "device_compare":  "implemented",
+                           "founder_retest":  "PENDING"
+                       },
+    "runs":  [
+                 {
+                     "folder":  "20261121-190752-test-e-untagged-mouse-event",
+                     "meta":  {
+                                  "label":  "test-e-untagged-mouse-event",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  6,
+                                  "stimulus":  "untagged-mouse-event",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  24,
+                                   "HookEvents":  24,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  0,
+                                   "RawRelative":  24,
+                                   "RawHDeviceZero":  24,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  24,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "uu_mouse_enters_raw_input":  "OBSERVED_RAW_EVENTS_PRESENT_IF_STIMULUS_WAS_UU",
+                                                 "llmhf_injected_seen":  true,
+                                                 "hDevice_always_zero":  true,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  0,
+                                                                              "relative":  24
+                                                                          },
+                                                 "note":  "Cross-check with per-test labels; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  null,
+                                                "ambiguous":  null,
+                                                "unmatched_raw":  null
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-190759-test-f-tagged-sendinput",
+                     "meta":  {
+                                  "label":  "test-f-tagged-sendinput",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  6,
+                                  "stimulus":  "tagged-sendinput",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  24,
+                                   "HookEvents":  24,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  0,
+                                   "RawRelative":  24,
+                                   "RawHDeviceZero":  24,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  24,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  24
+                               },
+                     "correlation_answers":  {
+                                                 "uu_mouse_enters_raw_input":  "OBSERVED_RAW_EVENTS_PRESENT_IF_STIMULUS_WAS_UU",
+                                                 "llmhf_injected_seen":  true,
+                                                 "hDevice_always_zero":  true,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  0,
+                                                                              "relative":  24
+                                                                          },
+                                                 "note":  "Cross-check with per-test labels; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  null,
+                                                "ambiguous":  null,
+                                                "unmatched_raw":  null
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-190812-test-a-uu-move",
+                     "meta":  {
+                                  "label":  "test-a-uu-move",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  5,
+                                  "stimulus":  "none",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  0,
+                                   "HookEvents":  0,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  0,
+                                   "RawRelative":  0,
+                                   "RawHDeviceZero":  0,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  0,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "uu_mouse_enters_raw_input":  "NO_RAW_EVENTS",
+                                                 "llmhf_injected_seen":  false,
+                                                 "hDevice_always_zero":  false,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  0,
+                                                                              "relative":  0
+                                                                          },
+                                                 "note":  "Cross-check with per-test labels; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  null,
+                                                "ambiguous":  null,
+                                                "unmatched_raw":  null
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-190827-test-uu-interactive-bundle",
+                     "meta":  {
+                                  "label":  "test-uu-interactive-bundle",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  20,
+                                  "stimulus":  "none",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  0,
+                                   "HookEvents":  0,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  0,
+                                   "RawRelative":  0,
+                                   "RawHDeviceZero":  0,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  0,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "uu_mouse_enters_raw_input":  "NO_RAW_EVENTS",
+                                                 "llmhf_injected_seen":  false,
+                                                 "hDevice_always_zero":  false,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  0,
+                                                                              "relative":  0
+                                                                          },
+                                                 "note":  "Cross-check with per-test labels; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  null,
+                                                "ambiguous":  null,
+                                                "unmatched_raw":  null
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-190921-test-b-uu-clicks-NOT_RUN",
+                     "meta":  null,
+                     "stats":  null,
+                     "correlation_answers":  null,
+                     "correlation_counts":  null,
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  null,
+                     "not_run":  {
+                                     "status":  "NOT_RUN",
+                                     "reason":  "UU interactive not captured in agent windows (zero-event A/bundle); Founder should re-run script while actively controlling"
+                                 }
+                 },
+                 {
+                     "folder":  "20261121-190921-test-c-uu-wheel-NOT_RUN",
+                     "meta":  null,
+                     "stats":  null,
+                     "correlation_answers":  null,
+                     "correlation_counts":  null,
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  null,
+                     "not_run":  {
+                                     "status":  "NOT_RUN",
+                                     "reason":  "UU interactive not captured in agent windows (zero-event A/bundle); Founder should re-run script while actively controlling"
+                                 }
+                 },
+                 {
+                     "folder":  "20261121-190921-test-d-uu-drag-select-NOT_RUN",
+                     "meta":  null,
+                     "stats":  null,
+                     "correlation_answers":  null,
+                     "correlation_counts":  null,
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  null,
+                     "not_run":  {
+                                     "status":  "NOT_RUN",
+                                     "reason":  "UU interactive not captured in agent windows (zero-event A/bundle); Founder should re-run script while actively controlling"
+                                 }
+                 },
+                 {
+                     "folder":  "20261121-190921-test-g-console-physical-NOT_RUN",
+                     "meta":  null,
+                     "stats":  null,
+                     "correlation_answers":  null,
+                     "correlation_counts":  null,
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  null,
+                     "not_run":  {
+                                     "status":  "NOT_RUN",
+                                     "reason":  "agent session cannot attest console-only physical mouse"
+                                 }
+                 },
+                 {
+                     "folder":  "20261121-202905-review-fix-env-smoke",
+                     "meta":  {
+                                  "label":  "review-fix-env-smoke",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  2,
+                                  "stimulus":  "none",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  0,
+                                   "HookEvents":  0,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  0,
+                                   "RawRelative":  0,
+                                   "RawHDeviceZero":  0,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  0,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "scoped_to_stimulus":  "review-fix-env-smoke",
+                                                 "llmhf_injected_seen_in_matches":  false,
+                                                 "hDevice_always_zero":  false,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  0,
+                                                                              "relative":  0
+                                                                          },
+                                                 "note":  "Cross-check only within this stimulus; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  0,
+                                                "ambiguous":  0,
+                                                "unmatched_raw":  0
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-202913-test-e-untagged-mouse-event-reviewfix",
+                     "meta":  {
+                                  "label":  "test-e-untagged-mouse-event-reviewfix",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  5,
+                                  "stimulus":  "untagged-mouse-event",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  24,
+                                   "HookEvents":  24,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  0,
+                                   "RawRelative":  24,
+                                   "RawHDeviceZero":  24,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  24,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "scoped_to_stimulus":  "test-e-untagged-mouse-event-reviewfix",
+                                                 "llmhf_injected_seen_in_matches":  true,
+                                                 "hDevice_always_zero":  true,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  0,
+                                                                              "relative":  24
+                                                                          },
+                                                 "note":  "Cross-check only within this stimulus; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  4,
+                                                "ambiguous":  20,
+                                                "unmatched_raw":  0
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-204149-test-a-uu-move",
+                     "meta":  {
+                                  "label":  "test-a-uu-move",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  10,
+                                  "stimulus":  "none",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  37,
+                                   "HookEvents":  37,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  0,
+                                   "RawRelative":  37,
+                                   "RawHDeviceZero":  37,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  37,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "scoped_to_stimulus":  "test-a-uu-move",
+                                                 "llmhf_injected_seen_in_matches":  false,
+                                                 "hDevice_always_zero":  true,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  0,
+                                                                              "relative":  37
+                                                                          },
+                                                 "note":  "Cross-check only within this stimulus; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  0,
+                                                "ambiguous":  37,
+                                                "unmatched_raw":  0
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-204206-test-b-uu-clicks",
+                     "meta":  {
+                                  "label":  "test-b-uu-clicks",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  10,
+                                  "stimulus":  "none",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  0,
+                                   "HookEvents":  0,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  0,
+                                   "RawRelative":  0,
+                                   "RawHDeviceZero":  0,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  0,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "scoped_to_stimulus":  "test-b-uu-clicks",
+                                                 "llmhf_injected_seen_in_matches":  false,
+                                                 "hDevice_always_zero":  false,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  0,
+                                                                              "relative":  0
+                                                                          },
+                                                 "note":  "Cross-check only within this stimulus; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  0,
+                                                "ambiguous":  0,
+                                                "unmatched_raw":  0
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-204226-test-b-uu-clicks",
+                     "meta":  {
+                                  "label":  "test-b-uu-clicks",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  12,
+                                  "stimulus":  "none",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  0,
+                                   "HookEvents":  0,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  0,
+                                   "RawRelative":  0,
+                                   "RawHDeviceZero":  0,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  0,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "scoped_to_stimulus":  "test-b-uu-clicks",
+                                                 "llmhf_injected_seen_in_matches":  false,
+                                                 "hDevice_always_zero":  false,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  0,
+                                                                              "relative":  0
+                                                                          },
+                                                 "note":  "Cross-check only within this stimulus; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  0,
+                                                "ambiguous":  0,
+                                                "unmatched_raw":  0
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-204252-test-bcd-uu-clicks-wheel-drag",
+                     "meta":  {
+                                  "label":  "test-bcd-uu-clicks-wheel-drag",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  20,
+                                  "stimulus":  "none",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  0,
+                                   "HookEvents":  0,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  0,
+                                   "RawRelative":  0,
+                                   "RawHDeviceZero":  0,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  0,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "scoped_to_stimulus":  "test-bcd-uu-clicks-wheel-drag",
+                                                 "llmhf_injected_seen_in_matches":  false,
+                                                 "hDevice_always_zero":  false,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  0,
+                                                                              "relative":  0
+                                                                          },
+                                                 "note":  "Cross-check only within this stimulus; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  0,
+                                                "ambiguous":  0,
+                                                "unmatched_raw":  0
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-204323-test-uu-connectivity-probe",
+                     "meta":  {
+                                  "label":  "test-uu-connectivity-probe",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  8,
+                                  "stimulus":  "none",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  517,
+                                   "HookEvents":  517,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  453,
+                                   "RawRelative":  64,
+                                   "RawHDeviceZero":  517,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  517,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "scoped_to_stimulus":  "test-uu-connectivity-probe",
+                                                 "llmhf_injected_seen_in_matches":  true,
+                                                 "hDevice_always_zero":  true,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  453,
+                                                                              "relative":  64
+                                                                          },
+                                                 "note":  "Cross-check only within this stimulus; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  4,
+                                                "ambiguous":  60,
+                                                "unmatched_raw":  453
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-204346-test-b-uu-clicks",
+                     "meta":  {
+                                  "label":  "test-b-uu-clicks",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  12,
+                                  "stimulus":  "none",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  707,
+                                   "HookEvents":  707,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  652,
+                                   "RawRelative":  55,
+                                   "RawHDeviceZero":  707,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  707,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "scoped_to_stimulus":  "test-b-uu-clicks",
+                                                 "llmhf_injected_seen_in_matches":  true,
+                                                 "hDevice_always_zero":  true,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  652,
+                                                                              "relative":  55
+                                                                          },
+                                                 "note":  "Cross-check only within this stimulus; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  4,
+                                                "ambiguous":  51,
+                                                "unmatched_raw":  652
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-204402-test-c-uu-wheel",
+                     "meta":  {
+                                  "label":  "test-c-uu-wheel",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  12,
+                                  "stimulus":  "none",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  291,
+                                   "HookEvents":  291,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  268,
+                                   "RawRelative":  23,
+                                   "RawHDeviceZero":  291,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  291,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "scoped_to_stimulus":  "test-c-uu-wheel",
+                                                 "llmhf_injected_seen_in_matches":  true,
+                                                 "hDevice_always_zero":  true,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  268,
+                                                                              "relative":  23
+                                                                          },
+                                                 "note":  "Cross-check only within this stimulus; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  1,
+                                                "ambiguous":  22,
+                                                "unmatched_raw":  268
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-204418-test-d-uu-drag-select",
+                     "meta":  {
+                                  "label":  "test-d-uu-drag-select",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  15,
+                                  "stimulus":  "none",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  109,
+                                   "HookEvents":  109,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  107,
+                                   "RawRelative":  2,
+                                   "RawHDeviceZero":  109,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  109,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "scoped_to_stimulus":  "test-d-uu-drag-select",
+                                                 "llmhf_injected_seen_in_matches":  true,
+                                                 "hDevice_always_zero":  true,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  107,
+                                                                              "relative":  2
+                                                                          },
+                                                 "note":  "Cross-check only within this stimulus; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  2,
+                                                "ambiguous":  0,
+                                                "unmatched_raw":  107
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-204530-test-b2-uu-right-clicks",
+                     "meta":  {
+                                  "label":  "test-b2-uu-right-clicks",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  10,
+                                  "stimulus":  "none",
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  0,
+                                   "HookEvents":  0,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  0,
+                                   "RawRelative":  0,
+                                   "RawHDeviceZero":  0,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  0,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "scoped_to_stimulus":  "test-b2-uu-right-clicks",
+                                                 "llmhf_injected_seen_in_matches":  false,
+                                                 "hDevice_always_zero":  false,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  0,
+                                                                              "relative":  0
+                                                                          },
+                                                 "note":  "Cross-check only within this stimulus; do not conclude from a single metric."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  0,
+                                                "ambiguous":  0,
+                                                "unmatched_raw":  0
+                                            },
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  false,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-213433-phase12-coordinate-env-coordinate-snapshot",
+                     "meta":  null,
+                     "stats":  null,
+                     "correlation_answers":  null,
+                     "correlation_counts":  null,
+                     "stimulus_verdict":  null,
+                     "has_coordinate_diagnostics":  true,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  null,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-213434-test-e-untagged-mouse-event-phase12",
+                     "meta":  {
+                                  "label":  "test-e-untagged-mouse-event-phase12",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  6,
+                                  "stimulus":  "untagged-mouse-event",
+                                  "prompt":  null,
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  24,
+                                   "HookEvents":  24,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  0,
+                                   "RawRelative":  24,
+                                   "RawHDeviceZero":  24,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  24,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  0
+                               },
+                     "correlation_answers":  {
+                                                 "scoped_to_stimulus":  "test-e-untagged-mouse-event-phase12",
+                                                 "llmhf_injected_seen_in_matches":  true,
+                                                 "hDevice_always_zero":  true,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  0,
+                                                                              "relative":  24
+                                                                          },
+                                                 "correlation_passed":  false,
+                                                 "note":  "Cross-check only within this stimulus; do not conclude from a single metric. correlation_passed requires all raw events matched uniquely."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  4,
+                                                "ambiguous":  20,
+                                                "unmatched_raw":  0
+                                            },
+                     "stimulus_verdict":  {
+                                              "label":  "test-e-untagged-mouse-event-phase12",
+                                              "status":  "NO_RULE",
+                                              "reason":  "No stimulus verdict rule for label",
+                                              "evidence":  {
+                                                               "label":  "test-e-untagged-mouse-event-phase12",
+                                                               "raw":  24,
+                                                               "hooks":  24
+                                                           },
+                                              "rule":  "PASS only when required actions are evidenced; ZERO/contaminated/incomplete never PASS."
+                                          },
+                     "has_coordinate_diagnostics":  true,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 },
+                 {
+                     "folder":  "20261121-213441-test-f-tagged-sendinput-phase12",
+                     "meta":  {
+                                  "label":  "test-f-tagged-sendinput-phase12",
+                                  "controller_platform":  "UNKNOWN",
+                                  "seconds":  6,
+                                  "stimulus":  "tagged-sendinput",
+                                  "prompt":  null,
+                                  "note":  "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+                              },
+                     "stats":  {
+                                   "RawEvents":  24,
+                                   "HookEvents":  24,
+                                   "RawDropped":  0,
+                                   "HookDropped":  0,
+                                   "RawAbsolute":  0,
+                                   "RawRelative":  24,
+                                   "RawHDeviceZero":  24,
+                                   "RawHDeviceNonZero":  0,
+                                   "HookInjected":  24,
+                                   "HookLowerIlInjected":  0,
+                                   "HookExtraInfoExecutorTag":  24
+                               },
+                     "correlation_answers":  {
+                                                 "scoped_to_stimulus":  "test-f-tagged-sendinput-phase12",
+                                                 "llmhf_injected_seen_in_matches":  true,
+                                                 "hDevice_always_zero":  true,
+                                                 "absolute_vs_relative":  {
+                                                                              "absolute":  0,
+                                                                              "relative":  24
+                                                                          },
+                                                 "correlation_passed":  false,
+                                                 "note":  "Cross-check only within this stimulus; do not conclude from a single metric. correlation_passed requires all raw events matched uniquely."
+                                             },
+                     "correlation_counts":  {
+                                                "matched":  5,
+                                                "ambiguous":  19,
+                                                "unmatched_raw":  0
+                                            },
+                     "stimulus_verdict":  {
+                                              "label":  "test-f-tagged-sendinput-phase12",
+                                              "status":  "NO_RULE",
+                                              "reason":  "No stimulus verdict rule for label",
+                                              "evidence":  {
+                                                               "label":  "test-f-tagged-sendinput-phase12",
+                                                               "raw":  24,
+                                                               "hooks":  24
+                                                           },
+                                              "rule":  "PASS only when required actions are evidenced; ZERO/contaminated/incomplete never PASS."
+                                          },
+                     "has_coordinate_diagnostics":  true,
+                     "has_device_compare":  false,
+                     "session_sm_remote":  false,
+                     "not_run":  null
+                 }
+             ]
+}

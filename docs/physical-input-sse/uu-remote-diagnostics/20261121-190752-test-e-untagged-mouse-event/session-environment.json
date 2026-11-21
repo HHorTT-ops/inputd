@@ -1,0 +1,148 @@
+{
+  "captured_at_utc": "2026-11-21T11:07:52.7586117\u002B00:00",
+  "sm_remote_session": false,
+  "sm_remote_session_note": "SM_REMOTESESSION=false does NOT prove absence of third-party remote control (e.g. NetEase UU).",
+  "process_id": 42988,
+  "session_id": 1,
+  "wts_client_protocol_type": 0,
+  "wts_client_protocol_note": "Console",
+  "monitor_count": 1,
+  "virtual_screen": {
+    "left": 0,
+    "top": 0,
+    "width": 1920,
+    "height": 1080
+  },
+  "primary_screen": {
+    "width": 1920,
+    "height": 1080
+  },
+  "raw_input_devices": [
+    {
+      "device_handle": "0x1009F",
+      "device_type": "type_2",
+      "device_name_redacted": "\\\\?\\VIRTUAL_DIGITIZER",
+      "looks_like_virtual_hid": true
+    },
+    {
+      "device_handle": "0x1006D",
+      "device_type": "type_2",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C52B\u0026MI_01\u0026Col04#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x1006B",
+      "device_type": "type_2",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C548\u0026MI_02\u0026Col02#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x10069",
+      "device_type": "type_2",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C52B\u0026MI_01\u0026Col02#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x10067",
+      "device_type": "type_2",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C52B\u0026MI_02\u0026Col02#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x10064",
+      "device_type": "type_2",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C548\u0026MI_02\u0026Col01#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x10062",
+      "device_type": "type_2",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C548\u0026MI_01\u0026Col02#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x10060",
+      "device_type": "type_2",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C52B\u0026MI_02\u0026Col01#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x1005E",
+      "device_type": "type_2",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C534\u0026MI_01\u0026Col05#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x1005C",
+      "device_type": "type_2",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C534\u0026MI_01\u0026Col04#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x1005A",
+      "device_type": "type_2",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C52B\u0026MI_02\u0026Col03#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x10058",
+      "device_type": "type_2",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C534\u0026MI_01\u0026Col02#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x10054",
+      "device_type": "mouse",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C534\u0026MI_01\u0026Col01#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x10052",
+      "device_type": "mouse",
+      "device_name_redacted": "\\\\?\\HID#HID_DEVICE_SYSTEM_VHF\u0026Col03#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x10050",
+      "device_type": "mouse",
+      "device_name_redacted": "\\\\?\\HID#HID_DEVICE_SYSTEM_VHF\u0026Col02#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x1004E",
+      "device_type": "mouse",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C52B\u0026MI_01\u0026Col01#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x1004C",
+      "device_type": "mouse",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C548\u0026MI_01\u0026Col01#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x10045",
+      "device_type": "keyboard",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C52B\u0026MI_00#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x10043",
+      "device_type": "keyboard",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C534\u0026MI_00#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x10041",
+      "device_type": "keyboard",
+      "device_name_redacted": "\\\\?\\HID#VID_046D\u0026PID_C548\u0026MI_00#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    },
+    {
+      "device_handle": "0x1003F",
+      "device_type": "keyboard",
+      "device_name_redacted": "\\\\?\\HID#HID_DEVICE_SYSTEM_VHF\u0026Col01#\u003Credacted\u003E",
+      "looks_like_virtual_hid": false
+    }
+  ]
+}

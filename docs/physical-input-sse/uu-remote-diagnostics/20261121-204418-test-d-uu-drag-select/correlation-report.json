@@ -1,0 +1,215 @@
+{
+  "stimulus_label": "test-d-uu-drag-select",
+  "note": "Results are scoped to this stimulus only; do not attribute TEST E/F findings to UU.",
+  "raw_events": 109,
+  "hook_events": 109,
+  "matched_one_to_one": 2,
+  "ambiguous": 0,
+  "unmatched_raw": 107,
+  "matched_near_injected_hook": 2,
+  "stats": {
+    "RawEvents": 109,
+    "HookEvents": 109,
+    "RawDropped": 0,
+    "HookDropped": 0,
+    "RawAbsolute": 107,
+    "RawRelative": 2,
+    "RawHDeviceZero": 109,
+    "RawHDeviceNonZero": 0,
+    "HookInjected": 109,
+    "HookLowerIlInjected": 0,
+    "HookExtraInfoExecutorTag": 0
+  },
+  "sample_pairs": [
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29642578000,
+        "Kind": "other",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 0,
+        "Dy": 0,
+        "ScreenX": 906,
+        "ScreenY": 379
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29647812000,
+        "Kind": "other",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 0,
+        "Dy": 0,
+        "ScreenX": 906,
+        "ScreenY": 379
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29647828000,
+        "Kind": "other",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 0,
+        "Dy": 0,
+        "ScreenX": 906,
+        "ScreenY": 379
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29647843000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 0,
+        "Dy": -1,
+        "ScreenX": 906,
+        "ScreenY": 378
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29647859000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 1,
+        "Dy": 0,
+        "ScreenX": 907,
+        "ScreenY": 378
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29647875000,
+        "Kind": "other",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 0,
+        "Dy": 0,
+        "ScreenX": 907,
+        "ScreenY": 378
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29647875000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 0,
+        "Dy": -1,
+        "ScreenX": 907,
+        "ScreenY": 377
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29647875000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 1,
+        "Dy": 0,
+        "ScreenX": 908,
+        "ScreenY": 377
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29647890000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 0,
+        "Dy": -1,
+        "ScreenX": 908,
+        "ScreenY": 376
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29647906000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 1,
+        "Dy": -1,
+        "ScreenX": 909,
+        "ScreenY": 375
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29647921000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 1,
+        "Dy": -2,
+        "ScreenX": 910,
+        "ScreenY": 373
+      },
+      "hook": null
+    },
+    {
+      "Status": "UNMATCHED_RAW",
+      "Reason": "no_compatible_hook_in_window",
+      "raw": {
+        "TimestampUs": 29647937000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 3,
+        "Dy": -3,
+        "ScreenX": 913,
+        "ScreenY": 370
+      },
+      "hook": null
+    }
+  ],
+  "answers_preliminary": {
+    "scoped_to_stimulus": "test-d-uu-drag-select",
+    "llmhf_injected_seen_in_matches": true,
+    "hDevice_always_zero": true,
+    "absolute_vs_relative": {
+      "absolute": 107,
+      "relative": 2
+    },
+    "note": "Cross-check only within this stimulus; do not conclude from a single metric."
+  }
+}

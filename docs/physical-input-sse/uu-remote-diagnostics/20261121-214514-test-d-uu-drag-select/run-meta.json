@@ -1,0 +1,8 @@
+{
+  "label": "test-d-uu-drag-select",
+  "controller_platform": "UNKNOWN",
+  "seconds": 15,
+  "stimulus": "none",
+  "prompt": "Hold LEFT drag \u003E=200px release",
+  "note": "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+}

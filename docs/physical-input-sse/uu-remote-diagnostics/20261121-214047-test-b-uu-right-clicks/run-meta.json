@@ -1,0 +1,8 @@
+{
+  "label": "test-b-uu-right-clicks",
+  "controller_platform": "UNKNOWN",
+  "seconds": 10,
+  "stimulus": "none",
+  "prompt": "RIGHT click only via UU.",
+  "note": "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+}

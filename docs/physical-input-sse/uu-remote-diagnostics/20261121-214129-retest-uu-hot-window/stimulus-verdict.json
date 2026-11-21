@@ -1,0 +1,11 @@
+{
+  "label": "retest-uu-hot-window",
+  "status": "NO_RULE",
+  "reason": "No stimulus verdict rule for label",
+  "evidence": {
+    "label": "retest-uu-hot-window",
+    "raw": 0,
+    "hooks": 0
+  },
+  "rule": "PASS only when required actions are evidenced; ZERO/contaminated/incomplete never PASS."
+}

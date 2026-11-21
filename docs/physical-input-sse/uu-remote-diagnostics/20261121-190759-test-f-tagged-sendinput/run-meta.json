@@ -1,0 +1,7 @@
+{
+  "label": "test-f-tagged-sendinput",
+  "controller_platform": "UNKNOWN",
+  "seconds": 6,
+  "stimulus": "tagged-sendinput",
+  "note": "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+}

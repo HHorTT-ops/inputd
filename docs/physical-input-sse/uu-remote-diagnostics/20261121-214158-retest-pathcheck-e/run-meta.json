@@ -1,0 +1,8 @@
+{
+  "label": "retest-pathcheck-e",
+  "controller_platform": "UNKNOWN",
+  "seconds": 5,
+  "stimulus": "untagged-mouse-event",
+  "prompt": null,
+  "note": "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+}

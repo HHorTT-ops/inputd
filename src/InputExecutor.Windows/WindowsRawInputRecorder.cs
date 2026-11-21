@@ -11,7 +11,7 @@ public sealed class WindowsRawInputRecorder : IHumanInputRecorder
 {
     private const int MaximumWriteBatch = 1024;
     private const int WriteBatchWindowMilliseconds = 8;
-    private const ushort MouseMoveAbsolute = 0x0001;
+    private const ushort MouseMoveAbsolute = MouseAbsoluteCoordinateTracker.MouseMoveAbsolute;
     private const ushort KeyBreak = 0x0001;
     private const ushort KeyE0 = 0x0002;
     private const ushort LeftDown = 0x0001, LeftUp = 0x0002, RightDown = 0x0004, RightUp = 0x0008;
@@ -22,6 +22,8 @@ public sealed class WindowsRawInputRecorder : IHumanInputRecorder
     private readonly object _diagnosticHookSync = new();
     private readonly HashSet<string> _heldKeys = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _heldButtons = new(StringComparer.OrdinalIgnoreCase);
+    private readonly MouseAbsoluteCoordinateTracker _absoluteTracker = new();
+    private readonly MouseAbsoluteCoordinateTracker _taggedAbsoluteTracker = new();
     private readonly ITrajectorySink _sink;
     private readonly IMonotonicClock _clock;
     private readonly Channel<QueuedRecord> _records;
@@ -316,13 +318,16 @@ public sealed class WindowsRawInputRecorder : IHumanInputRecorder
             }
             var header = Marshal.PtrToStructure<NativeMethods.RAWINPUTHEADER>(buffer);
             var body = IntPtr.Add(buffer, Marshal.SizeOf<NativeMethods.RAWINPUTHEADER>());
-            if (header.dwType == NativeMethods.RIM_TYPEMOUSE) ProcessMouse(Marshal.PtrToStructure<NativeMethods.RAWMOUSE>(body));
-            else if (header.dwType == NativeMethods.RIM_TYPEKEYBOARD) ProcessKeyboard(Marshal.PtrToStructure<NativeMethods.RAWKEYBOARD>(body));
+            var deviceHandle = InputSourceClass.FormatDeviceHandle(header.hDevice);
+            if (header.dwType == NativeMethods.RIM_TYPEMOUSE)
+                ProcessMouse(Marshal.PtrToStructure<NativeMethods.RAWMOUSE>(body), deviceHandle);
+            else if (header.dwType == NativeMethods.RIM_TYPEKEYBOARD)
+                ProcessKeyboard(Marshal.PtrToStructure<NativeMethods.RAWKEYBOARD>(body), deviceHandle);
         }
         finally { Marshal.FreeHGlobal(buffer); }
     }
 
-    private void ProcessKeyboard(NativeMethods.RAWKEYBOARD keyboard)
+    private void ProcessKeyboard(NativeMethods.RAWKEYBOARD keyboard, string deviceHandle)
     {
         var tagged = keyboard.ExtraInformation == unchecked((uint)WindowsSendInputBackend.ExecutorEventTag);
         // Executor-generated input is recorded by the opt-in diagnostic hooks. It must never
@@ -339,7 +344,8 @@ public sealed class WindowsRawInputRecorder : IHumanInputRecorder
                 TimestampUs = _clock.NowMicroseconds,
                 ChangedKey = code,
                 KeyDown = isDown,
-                InjectedTagged = true
+                InjectedTagged = true,
+                RawDeviceHandle = deviceHandle
             });
             return;
         }
@@ -363,23 +369,30 @@ public sealed class WindowsRawInputRecorder : IHumanInputRecorder
                 Mouse = new MouseFrame { HeldButtons = Sorted(_heldButtons) },
                 ChangedKey = code,
                 KeyDown = isDown,
-                InjectedTagged = tagged
+                InjectedTagged = tagged,
+                RawDeviceHandle = deviceHandle
             };
             if (context is not null) QueueLocked(context, frame);
         }
         Notify(frame);
     }
 
-    private void ProcessMouse(NativeMethods.RAWMOUSE mouse)
+    private void ProcessMouse(NativeMethods.RAWMOUSE mouse, string deviceHandle)
     {
         var tagged = mouse.ulExtraInformation == unchecked((uint)WindowsSendInputBackend.ExecutorEventTag);
         var flags = mouse.buttons.usButtonFlags;
         if (tagged)
         {
-            var taggedDx = (mouse.usFlags & MouseMoveAbsolute) == 0 ? mouse.lLastX : 0;
-            var taggedDy = (mouse.usFlags & MouseMoveAbsolute) == 0 ? mouse.lLastY : 0;
+            var taggedMotion = _taggedAbsoluteTracker.Process(
+                mouse.usFlags,
+                mouse.lLastX,
+                mouse.lLastY,
+                MouseAbsoluteCoordinateTracker.CaptureFromSystem());
+            var taggedDx = taggedMotion.Dx;
+            var taggedDy = taggedMotion.Dy;
             var taggedWheelY = (flags & Wheel) != 0 ? unchecked((short)mouse.buttons.usButtonData) : 0;
             var taggedWheelX = (flags & HWheel) != 0 ? unchecked((short)mouse.buttons.usButtonData) : 0;
+            // Keep click/wheel edges even when absolute baseline yields dx=dy=0.
             if (taggedDx != 0 || taggedDy != 0 || flags != 0)
             {
                 TaggedRawFrameObserved?.Invoke(this, new HumanInputFrame
@@ -387,7 +400,8 @@ public sealed class WindowsRawInputRecorder : IHumanInputRecorder
                     Device = "tagged_raw_mouse",
                     TimestampUs = _clock.NowMicroseconds,
                     Mouse = new MouseFrame { Dx = taggedDx, Dy = taggedDy, WheelX = taggedWheelX, WheelY = taggedWheelY },
-                    InjectedTagged = true
+                    InjectedTagged = true,
+                    RawDeviceHandle = deviceHandle
                 });
             }
             return;
@@ -401,10 +415,16 @@ public sealed class WindowsRawInputRecorder : IHumanInputRecorder
             UpdateButton(flags, MiddleDown, MiddleUp, "middle");
             UpdateButton(flags, X1Down, X1Up, "x1");
             UpdateButton(flags, X2Down, X2Up, "x2");
-            var dx = (mouse.usFlags & MouseMoveAbsolute) == 0 ? mouse.lLastX : 0;
-            var dy = (mouse.usFlags & MouseMoveAbsolute) == 0 ? mouse.lLastY : 0;
+            var motion = _absoluteTracker.Process(
+                mouse.usFlags,
+                mouse.lLastX,
+                mouse.lLastY,
+                MouseAbsoluteCoordinateTracker.CaptureFromSystem());
+            var dx = motion.Dx;
+            var dy = motion.Dy;
             var wheelY = (flags & Wheel) != 0 ? unchecked((short)mouse.buttons.usButtonData) : 0;
             var wheelX = (flags & HWheel) != 0 ? unchecked((short)mouse.buttons.usButtonData) : 0;
+            // Keep click/wheel edges even when absolute baseline is established with dx=dy=0.
             if (dx == 0 && dy == 0 && flags == 0) return;
             frame = new HumanInputFrame
             {
@@ -412,7 +432,8 @@ public sealed class WindowsRawInputRecorder : IHumanInputRecorder
                 TimestampUs = _clock.NowMicroseconds,
                 Keyboard = new KeyboardFrame { Held = Sorted(_heldKeys) },
                 Mouse = new MouseFrame { Dx = dx, Dy = dy, HeldButtons = Sorted(_heldButtons), WheelX = wheelX, WheelY = wheelY },
-                InjectedTagged = tagged
+                InjectedTagged = tagged,
+                RawDeviceHandle = deviceHandle
             };
             if (context is not null) QueueLocked(context, frame);
         }
