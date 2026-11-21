@@ -16,10 +16,12 @@ Baseline: `4154605`
 
 Unchanged: `DEVICE_ATTRIBUTED` | `EXECUTOR_INJECTED` | `UNATTRIBUTED`
 
-## REVIEW-02 observation notes (ACOS consumer)
+## REVIEW-02 / REVIEW-03 observation notes (ACOS consumer)
 
 - `tagged_frames_seen` increments only via `TaggedRawFrameObserved` (Raw Input ExtraInfo == ExecutorEventTag low 32 bits).
 - Injectors that use `SetCursorPos` or untagged `mouse_event`/`keybd_event` will **not** grow the counter and may appear as external activity.
-- ACOS Phase 2 REVIEW-02 retargets Qwen PyAutoGUI paths to tagged `SendInput` for move/click/wheel/key so runtime verification is possible.
+- ACOS Phase 2 retargets Qwen PyAutoGUI paths to tagged `SendInput` for move/click/wheel/key so runtime verification is possible.
+- REVIEW-03: ACOS requires **independent** tagged growth for mouse_move, mouse_click, mouse_wheel, and keyboard before opening QWEN; InputD restart invalidates prior runtime verify.
+- Mouse SSE payload includes `held_buttons` / `dx` / `dy` for handoff button correlation on the consumer.
 - No Virtual HID. No silent PASS when observation is impossible — consumers must report `NOT_RUN` / FAIL honestly.
-- This branch’s SSE contract is unchanged; ACOS fail-closed readiness + generation cancel live in Agent-Company-OS.
+- This branch's SSE contract is unchanged; ACOS fail-closed readiness + generation cancel live in Agent-Company-OS.
