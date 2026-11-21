@@ -3,6 +3,8 @@ namespace InputExecutor.Windows;
 /// <summary>
 /// Converts RAWMOUSE absolute coordinates (0..65535) into screen pixels and relative deltas.
 /// Relative packets pass through unchanged; absolute/relative mode switches reset the baseline.
+/// Mapping uses (width-1)/(height-1) so 0 and 65535 land on the inclusive desktop edges,
+/// including negative virtual-desktop origins.
 /// </summary>
 public sealed class MouseAbsoluteCoordinateTracker
 {
@@ -59,9 +61,8 @@ public sealed class MouseAbsoluteCoordinateTracker
         if (width <= 0) width = 1;
         if (height <= 0) height = 1;
 
-        // Map normalized 0..65535 into the chosen desktop rectangle (multi-monitor aware when VIRTUAL_DESKTOP is set).
-        var screenX = left + (int)((long)lastX * width / 65535L);
-        var screenY = top + (int)((long)lastY * height / 65535L);
+        var screenX = MapNormalizedAxis(lastX, left, width);
+        var screenY = MapNormalizedAxis(lastY, top, height);
 
         var originChanged = !_haveOrigin
             || left != _originLeft
@@ -88,6 +89,19 @@ public sealed class MouseAbsoluteCoordinateTracker
         _lastScreenX = screenX;
         _lastScreenY = screenY;
         return new Result(dx, dy, true, virtualDesktop, false, screenX, screenY, left, top, width, height);
+    }
+
+    /// <summary>
+    /// Maps a 0..65535 axis into [origin, origin+size-1] inclusive.
+    /// </summary>
+    public static int MapNormalizedAxis(int normalized, int origin, int size)
+    {
+        if (size <= 0) size = 1;
+        var span = size - 1;
+        if (span <= 0)
+            return origin;
+        var clamped = normalized < 0 ? 0 : normalized > 65535 ? 65535 : normalized;
+        return origin + (int)((long)clamped * span / 65535L);
     }
 
     public static ScreenMetrics CaptureFromSystem() => new(

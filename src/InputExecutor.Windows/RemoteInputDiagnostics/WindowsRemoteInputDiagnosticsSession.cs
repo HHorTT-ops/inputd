@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using System.Threading.Channels;
 using InputExecutor.Core.Abstractions;
 using InputExecutor.Core.Protocol;
 
@@ -9,18 +8,20 @@ namespace InputExecutor.Windows.RemoteInputDiagnostics;
 
 /// <summary>
 /// Independent dual-channel mouse input diagnostics (Raw Input + WH_MOUSE_LL).
-/// Hook callbacks only enqueue; JSONL is written asynchronously. CallNextHookEx always runs.
+/// Producers only copy POD samples via non-blocking TryEnqueue; JSON is written on background writers.
+/// Hook callbacks always call CallNextHookEx and never block on the channel or write files.
 /// </summary>
 public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
 {
-    private const int DiagnosticChannelCapacity = 8192;
+    public const int DefaultCapacity = 8192;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
 
     private readonly IMonotonicClock _clock;
     private readonly string _outputDirectory;
+    private readonly string _stimulusLabel;
     private readonly MouseAbsoluteCoordinateTracker _absoluteTracker = new();
-    private readonly Channel<string> _rawLines;
-    private readonly Channel<string> _hookLines;
+    private readonly DiagnosticChannel<RawSample> _rawChannel;
+    private readonly DiagnosticChannel<HookSample> _hookChannel;
     private readonly CancellationTokenSource _lifetime = new();
     private readonly ManualResetEventSlim _rawReady = new(false);
     private readonly ManualResetEventSlim _hookReady = new(false);
@@ -38,10 +39,6 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
     private uint _hookThreadId;
     private Exception? _rawError;
     private Exception? _hookError;
-    private long _rawEvents;
-    private long _hookEvents;
-    private long _rawDropped;
-    private long _hookDropped;
     private long _rawAbsolute;
     private long _rawRelative;
     private long _rawHDeviceZero;
@@ -50,24 +47,19 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
     private long _hookLowerIlInjected;
     private long _hookExtraInfoExecutorTag;
 
-    public WindowsRemoteInputDiagnosticsSession(IMonotonicClock clock, string outputDirectory)
+    public WindowsRemoteInputDiagnosticsSession(
+        IMonotonicClock clock,
+        string outputDirectory,
+        string stimulusLabel = "unspecified",
+        int capacity = DefaultCapacity)
     {
         if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException();
         _clock = clock;
         _outputDirectory = outputDirectory;
+        _stimulusLabel = stimulusLabel;
         Directory.CreateDirectory(outputDirectory);
-        _rawLines = Channel.CreateBounded<string>(new BoundedChannelOptions(DiagnosticChannelCapacity)
-        {
-            FullMode = BoundedChannelFullMode.DropWrite,
-            SingleReader = true,
-            SingleWriter = false
-        });
-        _hookLines = Channel.CreateBounded<string>(new BoundedChannelOptions(DiagnosticChannelCapacity)
-        {
-            FullMode = BoundedChannelFullMode.DropWrite,
-            SingleReader = true,
-            SingleWriter = false
-        });
+        _rawChannel = new DiagnosticChannel<RawSample>(capacity);
+        _hookChannel = new DiagnosticChannel<HookSample>(capacity);
     }
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
@@ -78,8 +70,8 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
             JsonSerializer.Serialize(env, new JsonSerializerOptions { WriteIndented = true }),
             cancellationToken).ConfigureAwait(false);
 
-        _rawWriter = Task.Run(() => WriteLoopAsync(_rawLines.Reader, Path.Combine(_outputDirectory, "raw-input.jsonl"), _lifetime.Token));
-        _hookWriter = Task.Run(() => WriteLoopAsync(_hookLines.Reader, Path.Combine(_outputDirectory, "ll-hook.jsonl"), _lifetime.Token));
+        _rawWriter = Task.Run(() => WriteRawLoopAsync(Path.Combine(_outputDirectory, "raw-input.jsonl"), _lifetime.Token));
+        _hookWriter = Task.Run(() => WriteHookLoopAsync(Path.Combine(_outputDirectory, "ll-hook.jsonl"), _lifetime.Token));
 
         _rawThread = new Thread(RawInputLoop) { IsBackground = true, Name = "inputd-uu-raw-diag" };
         _hookThread = new Thread(HookLoop) { IsBackground = true, Name = "inputd-uu-llhook-diag" };
@@ -96,11 +88,17 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
         lock (_statsSync)
         {
             return new DiagnosticsStats(
-                _rawEvents, _hookEvents, _rawDropped, _hookDropped,
+                _rawChannel.Enqueued, _hookChannel.Enqueued, _rawChannel.Dropped, _hookChannel.Dropped,
                 _rawAbsolute, _rawRelative, _rawHDeviceZero, _rawHDeviceNonZero,
                 _hookInjected, _hookLowerIlInjected, _hookExtraInfoExecutorTag);
         }
     }
+
+    /// <summary>Test seam: enqueue without starting native capture.</summary>
+    internal bool TryEnqueueRawForTests(RawSample sample) => _rawChannel.TryEnqueue(sample);
+
+    /// <summary>Test seam: enqueue without starting native capture.</summary>
+    internal bool TryEnqueueHookForTests(HookSample sample) => _hookChannel.TryEnqueue(sample);
 
     public async Task StopAsync()
     {
@@ -108,8 +106,8 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
         if (_hookThreadId != 0) NativeMethods.PostThreadMessage(_hookThreadId, NativeMethods.WM_QUIT, UIntPtr.Zero, IntPtr.Zero);
         _rawThread?.Join(TimeSpan.FromSeconds(3));
         _hookThread?.Join(TimeSpan.FromSeconds(3));
-        _rawLines.Writer.TryComplete();
-        _hookLines.Writer.TryComplete();
+        _rawChannel.Complete();
+        _hookChannel.Complete();
         if (_rawWriter is not null) await _rawWriter.ConfigureAwait(false);
         if (_hookWriter is not null) await _hookWriter.ConfigureAwait(false);
 
@@ -118,7 +116,7 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
             Path.Combine(_outputDirectory, "channel-stats.json"),
             JsonSerializer.Serialize(stats, new JsonSerializerOptions { WriteIndented = true })).ConfigureAwait(false);
 
-        var correlation = BuildCorrelationReport();
+        var correlation = BuildCorrelationReport(_stimulusLabel, stats);
         await File.WriteAllTextAsync(
             Path.Combine(_outputDirectory, "correlation-report.json"),
             JsonSerializer.Serialize(correlation, new JsonSerializerOptions { WriteIndented = true })).ConfigureAwait(false);
@@ -206,40 +204,31 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
             if (header.dwType != NativeMethods.RIM_TYPEMOUSE) return;
             var body = IntPtr.Add(buffer, Marshal.SizeOf<NativeMethods.RAWINPUTHEADER>());
             var mouse = Marshal.PtrToStructure<NativeMethods.RAWMOUSE>(body);
-            var deviceHandle = InputSourceClass.FormatDeviceHandle(header.hDevice);
             var motion = _absoluteTracker.Process(mouse.usFlags, mouse.lLastX, mouse.lLastY, MouseAbsoluteCoordinateTracker.CaptureFromSystem());
             var absolute = (mouse.usFlags & MouseAbsoluteCoordinateTracker.MouseMoveAbsolute) != 0;
-            var virtualDesktop = (mouse.usFlags & MouseAbsoluteCoordinateTracker.MouseVirtualDesktop) != 0;
-            var buttonFlags = mouse.buttons.usButtonFlags;
-            var buttonData = mouse.buttons.usButtonData;
-            var payload = new
-            {
-                channel = "raw_input",
-                timestamp_us = _clock.NowMicroseconds,
-                hDevice = deviceHandle,
-                usFlags = mouse.usFlags,
-                mouse_move_absolute = absolute,
-                mouse_virtual_desktop = virtualDesktop,
-                lLastX = mouse.lLastX,
-                lLastY = mouse.lLastY,
-                ulExtraInformation = mouse.ulExtraInformation,
-                usButtonFlags = buttonFlags,
-                usButtonData = buttonData,
-                dx = motion.Dx,
-                dy = motion.Dy,
-                screen_x = motion.ScreenX,
-                screen_y = motion.ScreenY,
-                established_baseline_only = motion.EstablishedBaselineOnly,
-                source_class = ClassifyRaw(deviceHandle, mouse.ulExtraInformation)
-            };
-            var json = JsonSerializer.Serialize(payload, JsonOptions);
+            var sample = new RawSample(
+                _clock.NowMicroseconds,
+                header.hDevice,
+                mouse.usFlags,
+                mouse.lLastX,
+                mouse.lLastY,
+                mouse.ulExtraInformation,
+                mouse.buttons.usButtonFlags,
+                mouse.buttons.usButtonData,
+                motion.Dx,
+                motion.Dy,
+                motion.ScreenX,
+                motion.ScreenY,
+                motion.EstablishedBaselineOnly,
+                absolute,
+                (mouse.usFlags & MouseAbsoluteCoordinateTracker.MouseVirtualDesktop) != 0);
+
             lock (_statsSync)
             {
-                _rawEvents++;
                 if (absolute) _rawAbsolute++; else _rawRelative++;
                 if (header.hDevice == IntPtr.Zero) _rawHDeviceZero++; else _rawHDeviceNonZero++;
-                if (!_rawLines.Writer.TryWrite(json)) _rawDropped++;
             }
+            _rawChannel.TryEnqueue(sample);
         }
         finally { Marshal.FreeHGlobal(buffer); }
     }
@@ -249,7 +238,6 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
         try
         {
             _hookThreadId = NativeMethods.GetCurrentThreadId();
-            // Message-only window keeps a message pump for the hook thread.
             var instance = NativeMethods.GetModuleHandle(null);
             _mouseHookProc ??= MouseHookProcedure;
             _mouseHook = NativeMethods.SetWindowsHookEx(NativeMethods.WH_MOUSE_LL, _mouseHookProc, instance, 0);
@@ -280,37 +268,16 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
             try
             {
                 var data = Marshal.PtrToStructure<NativeMethods.MSLLHOOKSTRUCT>(lParam);
-                var message = unchecked((uint)wParam.ToUInt64());
-                var flags = unchecked((int)data.flags);
-                var injected = (flags & NativeMethods.LLMHF_INJECTED) != 0;
-                var lowerIl = (flags & NativeMethods.LLMHF_LOWER_IL_INJECTED) != 0;
-                var extra = data.dwExtraInfo.ToUInt64();
-                var executorTagged = unchecked((uint)extra) == unchecked((uint)WindowsSendInputBackend.ExecutorEventTag);
-                var payload = new
-                {
-                    channel = "ll_hook",
-                    timestamp_us = _clock.NowMicroseconds,
-                    message = MessageName(message),
-                    message_id = message,
-                    pt_x = data.pt.X,
-                    pt_y = data.pt.Y,
-                    mouseData = data.mouseData,
-                    flags,
-                    llmhf_injected = injected,
-                    llmhf_lower_il_injected = lowerIl,
-                    dwExtraInfo = extra,
-                    time = data.time,
-                    executor_event_tag = executorTagged
-                };
-                var json = JsonSerializer.Serialize(payload, JsonOptions);
-                lock (_statsSync)
-                {
-                    _hookEvents++;
-                    if (injected) _hookInjected++;
-                    if (lowerIl) _hookLowerIlInjected++;
-                    if (executorTagged) _hookExtraInfoExecutorTag++;
-                    if (!_hookLines.Writer.TryWrite(json)) _hookDropped++;
-                }
+                var sample = new HookSample(
+                    _clock.NowMicroseconds,
+                    unchecked((uint)wParam.ToUInt64()),
+                    data.pt.X,
+                    data.pt.Y,
+                    data.mouseData,
+                    unchecked((int)data.flags),
+                    data.dwExtraInfo.ToUInt64(),
+                    data.time);
+                _hookChannel.TryEnqueue(sample);
             }
             catch
             {
@@ -318,6 +285,89 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
             }
         }
         return NativeMethods.CallNextHookEx(_mouseHook, code, wParam, lParam);
+    }
+
+    private async Task WriteRawLoopAsync(string path, CancellationToken cancellationToken)
+    {
+        await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
+        await using var writer = new StreamWriter(stream);
+        await foreach (var sample in _rawChannel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+        {
+            var deviceHandle = InputSourceClass.FormatDeviceHandle(sample.HDevice);
+            var payload = new
+            {
+                channel = "raw_input",
+                timestamp_us = sample.TimestampUs,
+                hDevice = deviceHandle,
+                usFlags = sample.UsFlags,
+                mouse_move_absolute = sample.Absolute,
+                mouse_virtual_desktop = sample.VirtualDesktop,
+                lLastX = sample.LastX,
+                lLastY = sample.LastY,
+                ulExtraInformation = sample.ExtraInformation,
+                usButtonFlags = sample.ButtonFlags,
+                usButtonData = sample.ButtonData,
+                dx = sample.Dx,
+                dy = sample.Dy,
+                screen_x = sample.ScreenX,
+                screen_y = sample.ScreenY,
+                established_baseline_only = sample.EstablishedBaselineOnly,
+                source_class = ClassifyRaw(deviceHandle, sample.ExtraInformation)
+            };
+            await writer.WriteLineAsync(JsonSerializer.Serialize(payload, JsonOptions)).ConfigureAwait(false);
+            await writer.FlushAsync().ConfigureAwait(false);
+        }
+    }
+
+    private async Task WriteHookLoopAsync(string path, CancellationToken cancellationToken)
+    {
+        await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
+        await using var writer = new StreamWriter(stream);
+        await foreach (var sample in _hookChannel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+        {
+            var injected = (sample.Flags & NativeMethods.LLMHF_INJECTED) != 0;
+            var lowerIl = (sample.Flags & NativeMethods.LLMHF_LOWER_IL_INJECTED) != 0;
+            var executorTagged = unchecked((uint)sample.ExtraInfo) == unchecked((uint)WindowsSendInputBackend.ExecutorEventTag);
+            lock (_statsSync)
+            {
+                if (injected) _hookInjected++;
+                if (lowerIl) _hookLowerIlInjected++;
+                if (executorTagged) _hookExtraInfoExecutorTag++;
+            }
+            var payload = new
+            {
+                channel = "ll_hook",
+                timestamp_us = sample.TimestampUs,
+                message = MessageName(sample.Message),
+                message_id = sample.Message,
+                pt_x = sample.PtX,
+                pt_y = sample.PtY,
+                mouseData = sample.MouseData,
+                flags = sample.Flags,
+                llmhf_injected = injected,
+                llmhf_lower_il_injected = lowerIl,
+                dwExtraInfo = sample.ExtraInfo,
+                time = sample.Time,
+                executor_event_tag = executorTagged
+            };
+            await writer.WriteLineAsync(JsonSerializer.Serialize(payload, JsonOptions)).ConfigureAwait(false);
+            await writer.FlushAsync().ConfigureAwait(false);
+        }
+    }
+
+    private object BuildCorrelationReport(string stimulusLabel, DiagnosticsStats stats)
+    {
+        var raw = ReadJsonl(Path.Combine(_outputDirectory, "raw-input.jsonl"))
+            .Select(DiagnosticsCorrelation.TryParseRaw)
+            .Where(x => x is not null)
+            .Cast<DiagnosticsCorrelation.RawEvent>()
+            .ToList();
+        var hooks = ReadJsonl(Path.Combine(_outputDirectory, "ll-hook.jsonl"))
+            .Select(DiagnosticsCorrelation.TryParseHook)
+            .Where(x => x is not null)
+            .Cast<DiagnosticsCorrelation.HookEvent>()
+            .ToList();
+        return DiagnosticsCorrelation.BuildReport(raw, hooks, stimulusLabel, stats);
     }
 
     private static string ClassifyRaw(string deviceHandle, uint extraInformation)
@@ -345,76 +395,6 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
         _ => $"WM_{message:X4}"
     };
 
-    private static async Task WriteLoopAsync(ChannelReader<string> reader, string path, CancellationToken cancellationToken)
-    {
-        await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
-        await using var writer = new StreamWriter(stream);
-        await foreach (var line in reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
-        {
-            await writer.WriteLineAsync(line).ConfigureAwait(false);
-            await writer.FlushAsync().ConfigureAwait(false);
-        }
-    }
-
-    private object BuildCorrelationReport()
-    {
-        var rawPath = Path.Combine(_outputDirectory, "raw-input.jsonl");
-        var hookPath = Path.Combine(_outputDirectory, "ll-hook.jsonl");
-        var raw = ReadJsonl(rawPath);
-        var hooks = ReadJsonl(hookPath);
-        var matchedWithin20ms = 0;
-        var rawWithInjectedHookNearby = 0;
-        var samplePairs = new List<object>();
-        foreach (var r in raw.Take(500))
-        {
-            if (!r.TryGetProperty("timestamp_us", out var rts)) continue;
-            var t = rts.GetInt64();
-            var near = hooks.Where(h =>
-            {
-                if (!h.TryGetProperty("timestamp_us", out var hts)) return false;
-                return Math.Abs(hts.GetInt64() - t) <= 20_000;
-            }).ToList();
-            if (near.Count == 0) continue;
-            matchedWithin20ms++;
-            if (near.Any(h => h.TryGetProperty("llmhf_injected", out var inj) && inj.GetBoolean()))
-                rawWithInjectedHookNearby++;
-            if (samplePairs.Count < 8)
-            {
-                samplePairs.Add(new
-                {
-                    raw_timestamp_us = t,
-                    raw_hDevice = r.TryGetProperty("hDevice", out var hd) ? hd.GetString() : null,
-                    raw_absolute = r.TryGetProperty("mouse_move_absolute", out var abs) && abs.GetBoolean(),
-                    nearby_hooks = near.Take(3).Select(h => new
-                    {
-                        timestamp_us = h.GetProperty("timestamp_us").GetInt64(),
-                        message = h.TryGetProperty("message", out var m) ? m.GetString() : null,
-                        llmhf_injected = h.TryGetProperty("llmhf_injected", out var i) && i.GetBoolean()
-                    })
-                });
-            }
-        }
-
-        var stats = SnapshotStats();
-        return new
-        {
-            raw_events = raw.Count,
-            hook_events = hooks.Count,
-            matched_raw_with_hook_within_20ms = matchedWithin20ms,
-            matched_raw_near_injected_hook = rawWithInjectedHookNearby,
-            stats,
-            sample_pairs = samplePairs,
-            answers_preliminary = new
-            {
-                uu_mouse_enters_raw_input = raw.Count > 0 ? "OBSERVED_RAW_EVENTS_PRESENT_IF_STIMULUS_WAS_UU" : "NO_RAW_EVENTS",
-                llmhf_injected_seen = stats.HookInjected > 0,
-                hDevice_always_zero = stats.RawHDeviceNonZero == 0 && stats.RawEvents > 0,
-                absolute_vs_relative = new { absolute = stats.RawAbsolute, relative = stats.RawRelative },
-                note = "Cross-check with per-test labels; do not conclude from a single metric."
-            }
-        };
-    }
-
     private static List<JsonElement> ReadJsonl(string path)
     {
         var list = new List<JsonElement>();
@@ -427,10 +407,37 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
                 using var doc = JsonDocument.Parse(line);
                 list.Add(doc.RootElement.Clone());
             }
-            catch { /* skip bad line */ }
+            catch { /* skip */ }
         }
         return list;
     }
+
+    internal readonly record struct RawSample(
+        long TimestampUs,
+        IntPtr HDevice,
+        ushort UsFlags,
+        int LastX,
+        int LastY,
+        uint ExtraInformation,
+        ushort ButtonFlags,
+        ushort ButtonData,
+        int Dx,
+        int Dy,
+        int? ScreenX,
+        int? ScreenY,
+        bool EstablishedBaselineOnly,
+        bool Absolute,
+        bool VirtualDesktop);
+
+    internal readonly record struct HookSample(
+        long TimestampUs,
+        uint Message,
+        int PtX,
+        int PtY,
+        uint MouseData,
+        int Flags,
+        ulong ExtraInfo,
+        uint Time);
 }
 
 public sealed record DiagnosticsStats(

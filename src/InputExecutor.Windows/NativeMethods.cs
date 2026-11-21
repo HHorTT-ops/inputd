@@ -31,6 +31,7 @@ internal static partial class NativeMethods
     internal const int SM_CYSCREEN = 1;
     internal const int SM_CMONITORS = 80;
     internal const int SM_REMOTESESSION = 0x1000;
+    internal const int SM_REMOTECONTROL = 0x2001;
     internal const int SM_XVIRTUALSCREEN = 76;
     internal const int SM_YVIRTUALSCREEN = 77;
     internal const int SM_CXVIRTUALSCREEN = 78;
@@ -348,10 +349,60 @@ internal static partial class NativeMethods
         internal uint dwType;
     }
 
+    [StructLayout(LayoutKind.Explicit)]
+    internal struct RID_DEVICE_INFO
+    {
+        [FieldOffset(0)] internal uint cbSize;
+        [FieldOffset(4)] internal uint dwType;
+        [FieldOffset(8)] internal RID_DEVICE_INFO_MOUSE mouse;
+        [FieldOffset(8)] internal RID_DEVICE_INFO_KEYBOARD keyboard;
+        [FieldOffset(8)] internal RID_DEVICE_INFO_HID hid;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RID_DEVICE_INFO_MOUSE
+    {
+        internal uint dwId;
+        internal uint dwNumberOfButtons;
+        internal uint dwSampleRate;
+        internal int fHasHorizontalWheel;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RID_DEVICE_INFO_KEYBOARD
+    {
+        internal uint dwType;
+        internal uint dwSubType;
+        internal uint dwKeyboardMode;
+        internal uint dwNumberOfFunctionKeys;
+        internal uint dwNumberOfIndicators;
+        internal uint dwNumberOfKeysTotal;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RID_DEVICE_INFO_HID
+    {
+        internal uint dwVendorId;
+        internal uint dwProductId;
+        internal uint dwVersionNumber;
+        internal ushort usUsagePage;
+        internal ushort usUsage;
+    }
+
     internal enum WTS_INFO_CLASS
     {
         WTSClientProtocolType = 16
     }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    internal static extern IntPtr LoadLibrary(string lpFileName);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
+    internal static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal delegate bool WtsIsRemoteSessionDelegate();
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     internal static extern IntPtr SetWindowsHookEx(int hookId, HookProcedure procedure, IntPtr module, uint threadId);

@@ -39,7 +39,7 @@ Console.WriteLine($"Listening {seconds}s label={label} controller={controller} s
 if (stimulus == "none")
     Console.WriteLine("Perform the requested mouse action NOW (UU remote or local as instructed).");
 
-await using var session = new WindowsRemoteInputDiagnosticsSession(new SystemMonotonicClock(), runDir);
+await using var session = new WindowsRemoteInputDiagnosticsSession(new SystemMonotonicClock(), runDir, stimulusLabel: label);
 await session.StartAsync();
 
 var deadline = DateTime.UtcNow.AddSeconds(seconds);

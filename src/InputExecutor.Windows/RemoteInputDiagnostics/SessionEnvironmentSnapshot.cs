@@ -1,8 +1,14 @@
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.Json.Serialization;
 
 namespace InputExecutor.Windows.RemoteInputDiagnostics;
+
+public static class DeviceCandidateClass
+{
+    public const string VhfDeviceCandidate = "VHF_DEVICE_CANDIDATE";
+    public const string VirtualHidCandidate = "VIRTUAL_HID_CANDIDATE";
+    public const string Unknown = "UNKNOWN";
+}
 
 public sealed record SessionEnvironmentSnapshot
 {
@@ -12,9 +18,18 @@ public sealed record SessionEnvironmentSnapshot
     [JsonPropertyName("sm_remote_session")]
     public bool SmRemoteSession { get; init; }
 
-    [JsonPropertyName("sm_remote_session_note")]
-    public string SmRemoteSessionNote { get; init; } =
-        "SM_REMOTESESSION=false does NOT prove absence of third-party remote control (e.g. NetEase UU).";
+    [JsonPropertyName("sm_remote_control")]
+    public bool SmRemoteControl { get; init; }
+
+    [JsonPropertyName("wts_is_remote_session")]
+    public bool? WtsIsRemoteSession { get; init; }
+
+    [JsonPropertyName("wts_is_remote_session_available")]
+    public bool WtsIsRemoteSessionAvailable { get; init; }
+
+    [JsonPropertyName("remote_indicators_note")]
+    public string RemoteIndicatorsNote { get; init; } =
+        "SM_REMOTESESSION / SM_REMOTECONTROL / WTSIsRemoteSession false or unavailable does NOT prove absence of third-party remote control (e.g. NetEase UU).";
 
     [JsonPropertyName("process_id")]
     public int ProcessId { get; init; }
@@ -39,6 +54,10 @@ public sealed record SessionEnvironmentSnapshot
 
     [JsonPropertyName("raw_input_devices")]
     public required IReadOnlyList<RawInputDeviceInfoDto> RawInputDevices { get; init; }
+
+    [JsonPropertyName("device_list_compare_note")]
+    public string DeviceListCompareNote { get; init; } =
+        "Capture once before UU connect and once after; compare device_handle sets. Name matches are candidates only — never assert UU ownership from names alone.";
 
     public static SessionEnvironmentSnapshot Capture()
     {
@@ -71,10 +90,15 @@ public sealed record SessionEnvironmentSnapshot
             }
         }
 
+        var (wtsRemote, wtsAvailable) = ProbeWtsIsRemoteSession();
+
         return new SessionEnvironmentSnapshot
         {
             CapturedAtUtc = DateTimeOffset.UtcNow.ToString("o"),
             SmRemoteSession = NativeMethods.GetSystemMetrics(NativeMethods.SM_REMOTESESSION) != 0,
+            SmRemoteControl = NativeMethods.GetSystemMetrics(NativeMethods.SM_REMOTECONTROL) != 0,
+            WtsIsRemoteSession = wtsRemote,
+            WtsIsRemoteSessionAvailable = wtsAvailable,
             ProcessId = Environment.ProcessId,
             SessionId = sessionId,
             WtsClientProtocolType = protocol,
@@ -94,6 +118,42 @@ public sealed record SessionEnvironmentSnapshot
             },
             RawInputDevices = EnumerateRawInputDevices()
         };
+    }
+
+    public static string ClassifyDeviceCandidate(string? redactedName)
+    {
+        if (string.IsNullOrWhiteSpace(redactedName))
+            return DeviceCandidateClass.Unknown;
+        if (redactedName.Contains("HID_DEVICE_SYSTEM_VHF", StringComparison.OrdinalIgnoreCase) ||
+            redactedName.Contains("SYSTEM_VHF", StringComparison.OrdinalIgnoreCase))
+            return DeviceCandidateClass.VhfDeviceCandidate;
+        if (redactedName.Contains("VIRTUAL", StringComparison.OrdinalIgnoreCase) ||
+            redactedName.Contains("VHID", StringComparison.OrdinalIgnoreCase) ||
+            redactedName.Contains("ROOT\\", StringComparison.OrdinalIgnoreCase) ||
+            redactedName.Contains("RDP", StringComparison.OrdinalIgnoreCase))
+            return DeviceCandidateClass.VirtualHidCandidate;
+        return DeviceCandidateClass.Unknown;
+    }
+
+    private static (bool? Value, bool Available) ProbeWtsIsRemoteSession()
+    {
+        foreach (var dll in new[] { "wtsapi32.dll", "kernel32.dll" })
+        {
+            var module = NativeMethods.LoadLibrary(dll);
+            if (module == IntPtr.Zero) continue;
+            var proc = NativeMethods.GetProcAddress(module, "WTSIsRemoteSession");
+            if (proc == IntPtr.Zero) continue;
+            try
+            {
+                var fn = Marshal.GetDelegateForFunctionPointer<NativeMethods.WtsIsRemoteSessionDelegate>(proc);
+                return (fn(), true);
+            }
+            catch
+            {
+                return (null, true);
+            }
+        }
+        return (null, false);
     }
 
     private static IReadOnlyList<RawInputDeviceInfoDto> EnumerateRawInputDevices()
@@ -128,8 +188,8 @@ public sealed record SessionEnvironmentSnapshot
             }
             catch { /* non-fatal */ }
 
-            // Redact potentially sensitive trailing instance IDs while keeping device class path.
             var redacted = RedactDeviceName(name);
+            var info = TryReadDeviceInfo(device.hDevice, device.dwType);
             result.Add(new RawInputDeviceInfoDto
             {
                 DeviceHandle = InputExecutor.Core.Protocol.InputSourceClass.FormatDeviceHandle(device.hDevice),
@@ -141,20 +201,49 @@ public sealed record SessionEnvironmentSnapshot
                     _ => $"type_{device.dwType}"
                 },
                 DeviceNameRedacted = redacted,
-                LooksLikeVirtualHid = redacted is not null && (
-                    redacted.Contains("ROOT\\", StringComparison.OrdinalIgnoreCase) ||
-                    redacted.Contains("VIRTUAL", StringComparison.OrdinalIgnoreCase) ||
-                    redacted.Contains("VHID", StringComparison.OrdinalIgnoreCase) ||
-                    redacted.Contains("RDP", StringComparison.OrdinalIgnoreCase))
+                CandidateClass = ClassifyDeviceCandidate(redacted),
+                LooksLikeVirtualHid = ClassifyDeviceCandidate(redacted) is not DeviceCandidateClass.Unknown,
+                HidUsagePage = info?.UsagePage,
+                HidUsage = info?.Usage,
+                VendorId = info?.VendorId,
+                ProductId = info?.ProductId,
+                DeviceInfoNote = "CandidateClass is name-based only; never assert UU ownership from device names."
             });
         }
         return result;
     }
 
+    private static (ushort? UsagePage, ushort? Usage, uint? VendorId, uint? ProductId)? TryReadDeviceInfo(IntPtr device, uint dwType)
+    {
+        try
+        {
+            var info = new NativeMethods.RID_DEVICE_INFO { cbSize = (uint)Marshal.SizeOf<NativeMethods.RID_DEVICE_INFO>() };
+            var size = info.cbSize;
+            var ptr = Marshal.AllocHGlobal((int)size);
+            try
+            {
+                Marshal.StructureToPtr(info, ptr, false);
+                if (NativeMethods.GetRawInputDeviceInfo(device, NativeMethods.RIDI_DEVICEINFO, ptr, ref size) == unchecked((uint)-1))
+                    return null;
+                var parsed = Marshal.PtrToStructure<NativeMethods.RID_DEVICE_INFO>(ptr);
+                if (parsed.dwType == 2 || dwType == 2)
+                {
+                    return (parsed.hid.usUsagePage, parsed.hid.usUsage, parsed.hid.dwVendorId, parsed.hid.dwProductId);
+                }
+                if (parsed.dwType == NativeMethods.RIM_TYPEMOUSE)
+                {
+                    return (null, null, null, null);
+                }
+            }
+            finally { Marshal.FreeHGlobal(ptr); }
+        }
+        catch { /* non-fatal */ }
+        return null;
+    }
+
     private static string? RedactDeviceName(string? name)
     {
         if (string.IsNullOrWhiteSpace(name)) return name;
-        // Keep up to last meaningful class segment; strip long hardware IDs after '#' when present.
         var parts = name.Split('#');
         if (parts.Length <= 2) return name;
         return string.Join('#', parts.Take(2)) + "#<redacted>";
@@ -172,6 +261,24 @@ public sealed record RawInputDeviceInfoDto
     [JsonPropertyName("device_name_redacted")]
     public string? DeviceNameRedacted { get; init; }
 
+    [JsonPropertyName("candidate_class")]
+    public string CandidateClass { get; init; } = DeviceCandidateClass.Unknown;
+
     [JsonPropertyName("looks_like_virtual_hid")]
     public bool LooksLikeVirtualHid { get; init; }
+
+    [JsonPropertyName("hid_usage_page")]
+    public ushort? HidUsagePage { get; init; }
+
+    [JsonPropertyName("hid_usage")]
+    public ushort? HidUsage { get; init; }
+
+    [JsonPropertyName("vendor_id")]
+    public uint? VendorId { get; init; }
+
+    [JsonPropertyName("product_id")]
+    public uint? ProductId { get; init; }
+
+    [JsonPropertyName("device_info_note")]
+    public string? DeviceInfoNote { get; init; }
 }

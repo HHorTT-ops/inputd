@@ -1,0 +1,20 @@
+inputd Phase 1.1 review fix — Release tests
+Date: 2026-11-21
+SDK: 10.0.404
+Baseline before fix: 675cc5c02ffa5bc42662e0b419c6fb1445d76c39
+
+dotnet build InputExecutor.sln -c Release
+  PASS (0 warnings, 0 errors)
+
+dotnet test InputExecutor.sln -c Release
+  InputExecutor.IntegrationTests: 14 passed, 0 failed
+  InputExecutor.Tests: 57 passed, 13 skipped, 0 failed
+
+New/expanded automated coverage:
+  MouseAbsoluteCoordinateTrackerTests (primary edges, virtual corners, 65535)
+  DiagnosticChannel drop-count accuracy
+  DiagnosticsCorrelation 1:1 / AMBIGUOUS / kind filter
+  DeviceCandidateClass VHF / VIRTUAL_HID / UNKNOWN
+
+Real UU interactive A-D: not re-run / not fabricated
+Console physical G: NOT_RUN
