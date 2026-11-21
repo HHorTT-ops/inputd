@@ -60,6 +60,14 @@ public static class PhysicalMouseSseEndpoint
                 source_class = message.Mouse.SourceClass,
                 raw_device_handle = message.Mouse.RawDeviceHandle
             },
+            "key_activity" => new
+            {
+                sequence = message.KeyActivity!.Sequence,
+                timestamp_us = message.KeyActivity.TimestampUs,
+                source_class = message.KeyActivity.SourceClass,
+                raw_device_handle = message.KeyActivity.RawDeviceHandle,
+                edge = message.KeyActivity.Edge
+            },
             "heartbeat" => new
             {
                 timestamp_us = message.HeartbeatTimestampUs,
