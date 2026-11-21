@@ -27,10 +27,21 @@ internal static partial class NativeMethods
     internal const uint KEYEVENTF_KEYUP = 0x0002;
     internal const uint KEYEVENTF_UNICODE = 0x0004;
     internal const uint KEYEVENTF_SCANCODE = 0x0008;
+    internal const int SM_CXSCREEN = 0;
+    internal const int SM_CYSCREEN = 1;
+    internal const int SM_CMONITORS = 80;
+    internal const int SM_REMOTESESSION = 0x1000;
     internal const int SM_XVIRTUALSCREEN = 76;
     internal const int SM_YVIRTUALSCREEN = 77;
     internal const int SM_CXVIRTUALSCREEN = 78;
     internal const int SM_CYVIRTUALSCREEN = 79;
+    internal const uint RID_HEADER = 0x10000005;
+    internal const uint RIDI_DEVICENAME = 0x20000007;
+    internal const uint RIDI_DEVICEINFO = 0x2000000B;
+    internal const int LLMHF_INJECTED = 0x00000001;
+    internal const int LLMHF_LOWER_IL_INJECTED = 0x00000002;
+    internal const ushort MouseMoveAbsoluteFlag = 0x0001;
+    internal const ushort MouseVirtualDesktopFlag = 0x0002;
     internal const uint MOD_ALT = 0x0001;
     internal const uint MOD_CONTROL = 0x0002;
     internal const uint MOD_NOREPEAT = 0x4000;
@@ -312,6 +323,35 @@ internal static partial class NativeMethods
 
     [LibraryImport("user32.dll", SetLastError = true)]
     internal static partial uint GetRawInputData(IntPtr rawInput, uint command, IntPtr data, ref uint size, uint headerSize);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern uint GetRawInputDeviceList([Out] RAWINPUTDEVICELIST[]? devices, ref uint count, uint size);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    internal static extern uint GetRawInputDeviceInfo(IntPtr device, uint command, IntPtr data, ref uint size);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool ProcessIdToSessionId(uint processId, out uint sessionId);
+
+    [DllImport("wtsapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool WTSQuerySessionInformation(IntPtr server, int sessionId, WTS_INFO_CLASS infoClass, out IntPtr buffer, out int bytesReturned);
+
+    [DllImport("wtsapi32.dll")]
+    internal static extern void WTSFreeMemory(IntPtr memory);
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RAWINPUTDEVICELIST
+    {
+        internal IntPtr hDevice;
+        internal uint dwType;
+    }
+
+    internal enum WTS_INFO_CLASS
+    {
+        WTSClientProtocolType = 16
+    }
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     internal static extern IntPtr SetWindowsHookEx(int hookId, HookProcedure procedure, IntPtr module, uint threadId);

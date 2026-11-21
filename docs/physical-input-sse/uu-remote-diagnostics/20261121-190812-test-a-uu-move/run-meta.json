@@ -1,0 +1,7 @@
+{
+  "label": "test-a-uu-move",
+  "controller_platform": "UNKNOWN",
+  "seconds": 5,
+  "stimulus": "none",
+  "note": "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+}

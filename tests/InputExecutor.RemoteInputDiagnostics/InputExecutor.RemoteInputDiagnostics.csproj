@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>inputd-remote-input-diagnostics</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\InputExecutor.Core\InputExecutor.Core.csproj" />
+    <ProjectReference Include="..\..\src\InputExecutor.Windows\InputExecutor.Windows.csproj" />
+  </ItemGroup>
+</Project>

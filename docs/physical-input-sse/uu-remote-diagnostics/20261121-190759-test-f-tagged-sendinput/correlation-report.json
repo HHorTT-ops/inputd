@@ -1,0 +1,207 @@
+{
+  "raw_events": 24,
+  "hook_events": 24,
+  "matched_raw_with_hook_within_20ms": 24,
+  "matched_raw_near_injected_hook": 24,
+  "stats": {
+    "RawEvents": 24,
+    "HookEvents": 24,
+    "RawDropped": 0,
+    "HookDropped": 0,
+    "RawAbsolute": 0,
+    "RawRelative": 24,
+    "RawHDeviceZero": 24,
+    "RawHDeviceNonZero": 0,
+    "HookInjected": 24,
+    "HookLowerIlInjected": 0,
+    "HookExtraInfoExecutorTag": 24
+  },
+  "sample_pairs": [
+    {
+      "raw_timestamp_us": 23860531000,
+      "raw_hDevice": "0x0",
+      "raw_absolute": false,
+      "nearby_hooks": [
+        {
+          "timestamp_us": 23860531000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860531000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860546000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        }
+      ]
+    },
+    {
+      "raw_timestamp_us": 23860546000,
+      "raw_hDevice": "0x0",
+      "raw_absolute": false,
+      "nearby_hooks": [
+        {
+          "timestamp_us": 23860531000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860531000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860546000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        }
+      ]
+    },
+    {
+      "raw_timestamp_us": 23860546000,
+      "raw_hDevice": "0x0",
+      "raw_absolute": false,
+      "nearby_hooks": [
+        {
+          "timestamp_us": 23860531000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860531000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860546000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        }
+      ]
+    },
+    {
+      "raw_timestamp_us": 23860546000,
+      "raw_hDevice": "0x0",
+      "raw_absolute": false,
+      "nearby_hooks": [
+        {
+          "timestamp_us": 23860531000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860531000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860546000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        }
+      ]
+    },
+    {
+      "raw_timestamp_us": 23860546000,
+      "raw_hDevice": "0x0",
+      "raw_absolute": false,
+      "nearby_hooks": [
+        {
+          "timestamp_us": 23860531000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860531000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860546000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        }
+      ]
+    },
+    {
+      "raw_timestamp_us": 23860546000,
+      "raw_hDevice": "0x0",
+      "raw_absolute": false,
+      "nearby_hooks": [
+        {
+          "timestamp_us": 23860531000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860531000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860546000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        }
+      ]
+    },
+    {
+      "raw_timestamp_us": 23860968000,
+      "raw_hDevice": "0x0",
+      "raw_absolute": false,
+      "nearby_hooks": [
+        {
+          "timestamp_us": 23860968000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860968000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860984000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        }
+      ]
+    },
+    {
+      "raw_timestamp_us": 23860984000,
+      "raw_hDevice": "0x0",
+      "raw_absolute": false,
+      "nearby_hooks": [
+        {
+          "timestamp_us": 23860968000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860968000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        },
+        {
+          "timestamp_us": 23860984000,
+          "message": "WM_MOUSEMOVE",
+          "llmhf_injected": true
+        }
+      ]
+    }
+  ],
+  "answers_preliminary": {
+    "uu_mouse_enters_raw_input": "OBSERVED_RAW_EVENTS_PRESENT_IF_STIMULUS_WAS_UU",
+    "llmhf_injected_seen": true,
+    "hDevice_always_zero": true,
+    "absolute_vs_relative": {
+      "absolute": 0,
+      "relative": 24
+    },
+    "note": "Cross-check with per-test labels; do not conclude from a single metric."
+  }
+}

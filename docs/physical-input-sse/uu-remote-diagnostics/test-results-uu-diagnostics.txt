@@ -1,0 +1,19 @@
+inputd UU remote diagnostics — Release tests
+Date: 2026-11-21
+SDK: 10.0.404
+
+dotnet build InputExecutor.sln -c Release
+  PASS (0 warnings, 0 errors)
+
+dotnet test InputExecutor.sln -c Release
+  InputExecutor.IntegrationTests: 14 passed, 0 failed
+  InputExecutor.Tests: 46 passed, 13 skipped, 0 failed
+  (includes MouseAbsoluteCoordinateTrackerTests x3)
+
+Diagnostics captures:
+  TEST E untagged mouse_event: PASS (raw=24, hook=24, LLMHF_INJECTED=24)
+  TEST F tagged SendInput: PASS (raw=24, hook=24, ExecutorTag on hook=24)
+  TEST A UU move: ZERO_EVENTS
+  TEST UU interactive bundle: ZERO_EVENTS
+  TEST B/C/D: NOT_RUN (need Founder re-run while controlling)
+  TEST G console physical: NOT_RUN

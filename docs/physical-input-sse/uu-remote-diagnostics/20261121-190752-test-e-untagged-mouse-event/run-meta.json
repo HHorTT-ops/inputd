@@ -1,0 +1,7 @@
+{
+  "label": "test-e-untagged-mouse-event",
+  "controller_platform": "UNKNOWN",
+  "seconds": 6,
+  "stimulus": "untagged-mouse-event",
+  "note": "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+}
