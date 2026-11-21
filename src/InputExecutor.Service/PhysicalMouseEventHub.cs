@@ -64,7 +64,8 @@ public sealed class PhysicalMouseEventHub : IDisposable
 
         var sourceClass = InputSourceClass.Classify(frame);
         // EXECUTOR_INJECTED must never appear here (InjectedTagged early-return above).
-        // HUMAN_PHYSICAL and UNATTRIBUTED are both published; consumers must filter by source_class.
+        // DEVICE_ATTRIBUTED and UNATTRIBUTED are both published; consumers must filter by source_class.
+        // DEVICE_ATTRIBUTED is device-handle attribution only — not proof of human hand input.
         var sequence = Interlocked.Increment(ref _sequence);
         var message = PhysicalMouseSseMessage.ForMouse(new PhysicalMouseEventDto
         {

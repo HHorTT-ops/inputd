@@ -67,7 +67,7 @@ public static class InputStimulus {
   public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
 
   public static void UntaggedMouseEventBurst() {
-    // ExtraInformation = 0 — must classify as UNATTRIBUTED when seen on Raw Input.
+    // ExtraInformation = 0 �?must classify as UNATTRIBUTED when seen on Raw Input.
     mouse_event(MOUSEEVENTF_MOVE, 20, 0, 0, UIntPtr.Zero);
     mouse_event(MOUSEEVENTF_MOVE, 0, 15, 0, UIntPtr.Zero);
     mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, UIntPtr.Zero);
@@ -98,7 +98,7 @@ function Show-HandInstructionWindow([string]$text) {
   Add-Type -AssemblyName System.Windows.Forms | Out-Null
   Add-Type -AssemblyName System.Drawing | Out-Null
   $form = New-Object System.Windows.Forms.Form
-  $form.Text = "inputd physical-input SSE — hand test"
+  $form.Text = "inputd physical-input SSE �?hand test"
   $form.Width = 520
   $form.Height = 260
   $form.TopMost = $true
@@ -121,12 +121,12 @@ $handForm = $null
 if ($Mode -eq "hand") {
   $handForm = Show-HandInstructionWindow @"
 请在倒计时内用【真实物理鼠标】完成：
-1) 移动光标若干次
-2) 左键单击至少一次
-3) 滚动滚轮至少一次
+1) 移动光标若干�?
+2) 左键单击至少一�?
+3) 滚动滚轮至少一�?
 
-不要用其他程序注入输入。
-窗口可保持置顶；完成后无需点按钮，脚本会自动结束。
+不要用其他程序注入输入�?
+窗口可保持置顶；完成后无需点按钮，脚本会自动结束�?
 "@
 }
 
@@ -145,7 +145,7 @@ if (-not $resp.IsSuccessStatusCode) { throw "SSE request failed" }
 $stream = $resp.Content.ReadAsStreamAsync().GetAwaiter().GetResult()
 $reader = New-Object System.IO.StreamReader($stream)
 $mouse = 0; $heartbeat = 0; $fault = 0
-$byClass = @{ HUMAN_PHYSICAL = 0; UNATTRIBUTED = 0; OTHER = 0 }
+$byClass = @{ DEVICE_ATTRIBUTED = 0; UNATTRIBUTED = 0; OTHER = 0 }
 $maxTagged = 0
 $samples = New-Object System.Collections.Generic.List[string]
 $eventName = $null
@@ -221,17 +221,17 @@ $result = [ordered]@{
   verdict_notes = $(
     switch ($Mode) {
       "hand" {
-        if ($mouse -gt 0 -and $byClass["HUMAN_PHYSICAL"] -gt 0 -and $fault -eq 0) {
-          "OBSERVED_DEVICE_ATTRIBUTED_EVENTS — still requires human confirmation that only a physical mouse was used"
+        if ($mouse -gt 0 -and $byClass["DEVICE_ATTRIBUTED"] -gt 0 -and $fault -eq 0) {
+          "OBSERVED_DEVICE_ATTRIBUTED_EVENTS �?still requires human confirmation that only a physical mouse was used"
         } elseif ($mouse -gt 0) {
-          "EVENTS_SEEN_BUT_NOT_DEVICE_ATTRIBUTED — investigate hDevice"
-        } else { "NO_MOUSE_EVENTS — NOT_PASS" }
+          "EVENTS_SEEN_BUT_NOT_DEVICE_ATTRIBUTED �?investigate hDevice"
+        } else { "NO_MOUSE_EVENTS �?NOT_PASS" }
       }
       "untagged-mouse-event" {
-        if ($byClass["UNATTRIBUTED"] -gt 0 -and $byClass["HUMAN_PHYSICAL"] -eq 0) {
+        if ($byClass["UNATTRIBUTED"] -gt 0 -and $byClass["DEVICE_ATTRIBUTED"] -eq 0) {
           "PASS_UNATTRIBUTED_AS_EXPECTED"
         } elseif ($byClass["UNATTRIBUTED"] -gt 0) {
-          "MIXED_CLASSES — review samples; injection may coexist with real mouse motion"
+          "MIXED_CLASSES �?review samples; injection may coexist with real mouse motion"
         } else { "FAIL_EXPECTED_UNATTRIBUTED" }
       }
       "tagged-sendinput" {

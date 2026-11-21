@@ -7,10 +7,12 @@ namespace InputExecutor.Core.Protocol;
 public static class InputSourceClass
 {
     /// <summary>
-    /// Raw Input reported a non-null device handle. Strong signal of a registered HID/mouse device,
-    /// not a proof of human physical operation (virtual HID drivers can also produce handles).
+    /// Raw Input reported a non-null <c>RAWINPUTHEADER.hDevice</c>.
+    /// This means Windows associated the packet with a registered HID/mouse device handle.
+    /// It does <strong>not</strong> prove a human operated a physical mouse (virtual HID can also
+    /// produce non-null handles). Do not map this 1:1 to ownership <c>HUMAN_CONTROL</c>.
     /// </summary>
-    public const string HumanPhysical = "HUMAN_PHYSICAL";
+    public const string DeviceAttributed = "DEVICE_ATTRIBUTED";
 
     /// <summary>
     /// inputd's own SendInput path tagged with <c>ExecutorEventTag</c>.
@@ -31,7 +33,7 @@ public static class InputSourceClass
             return ExecutorInjected;
 
         if (TryParseDeviceHandle(frame.RawDeviceHandle, out var handle) && handle != 0)
-            return HumanPhysical;
+            return DeviceAttributed;
 
         return Unattributed;
     }

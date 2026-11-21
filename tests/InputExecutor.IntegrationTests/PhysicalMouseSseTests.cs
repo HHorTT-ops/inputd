@@ -1,4 +1,4 @@
-ï»¿using System.Net;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using InputExecutor.Core.Abstractions;
@@ -64,13 +64,13 @@ public sealed class PhysicalMouseSseTests
         Assert.Equal(-3, first.Mouse.Dy);
         Assert.Equal(new[] { "left" }, first.Mouse.HeldButtons);
         Assert.Equal(120, first.Mouse.WheelY);
-        Assert.Equal(InputSourceClass.HumanPhysical, first.Mouse.SourceClass);
+        Assert.Equal(InputSourceClass.DeviceAttributed, first.Mouse.SourceClass);
         Assert.Equal("0xABC", first.Mouse.RawDeviceHandle);
         Assert.False(subscription.Reader.TryRead(out _));
     }
 
     [Fact]
-    public void Hub_ClassifiesZeroDeviceHandleAsUnattributed_AndNonZeroAsHumanPhysical()
+    public void Hub_ClassifiesZeroDeviceHandleAsUnattributed_AndNonZeroAsDeviceAttributed()
     {
         using var hub = new PhysicalMouseEventHub();
         using var subscription = hub.Subscribe(capacity: 4);
@@ -102,7 +102,7 @@ public sealed class PhysicalMouseSseTests
         Assert.True(subscription.Reader.TryRead(out var unattributedNull));
         Assert.Equal(InputSourceClass.Unattributed, unattributedNull.Mouse!.SourceClass);
         Assert.True(subscription.Reader.TryRead(out var physical));
-        Assert.Equal(InputSourceClass.HumanPhysical, physical.Mouse!.SourceClass);
+        Assert.Equal(InputSourceClass.DeviceAttributed, physical.Mouse!.SourceClass);
         Assert.Equal("0x1A2B", physical.Mouse.RawDeviceHandle);
     }
 
@@ -133,7 +133,7 @@ public sealed class PhysicalMouseSseTests
     }
 
     [Fact]
-    public void InputSourceClass_DoesNotTreatExtraInfoZeroAsHumanPhysical()
+    public void InputSourceClass_DoesNotTreatExtraInfoZeroAsDeviceAttributed()
     {
         // ExtraInformation == 0 alone is not classification input; device handle decides.
         var untaggedInjected = new HumanInputFrame
@@ -186,7 +186,7 @@ public sealed class PhysicalMouseSseTests
         Assert.Equal(5, evt.Data.GetProperty("dx").GetInt32());
         Assert.Equal(-1, evt.Data.GetProperty("dy").GetInt32());
         Assert.Equal(42, evt.Data.GetProperty("timestamp_us").GetInt64());
-        Assert.Equal(InputSourceClass.HumanPhysical, evt.Data.GetProperty("source_class").GetString());
+        Assert.Equal(InputSourceClass.DeviceAttributed, evt.Data.GetProperty("source_class").GetString());
         Assert.Equal("0x55", evt.Data.GetProperty("raw_device_handle").GetString());
         Assert.Equal(0, factory.Source.StartRecordingCalls);
     }
@@ -257,9 +257,11 @@ public sealed class PhysicalMouseSseTests
     [Fact]
     public async Task PhysicalMouseSseHandler_OverflowWritesFault_ViaRealChannelBackpressure()
     {
-        // Invoke the real SSE handler with a gated response body. After the initial heartbeat,
-        // block WriteAsync so the capacity-1 channel backs up; the next publish hits Broadcast's
-        // TryWrite failure path (same as production overflow). No TestServer TCP backpressure.
+        // Real Handler test (not TestServer TCP backpressure):
+        // 1) wait for initial heartbeat fully written
+        // 2) block subsequent response writes
+        // 3) publish until Broadcast hits real Channel TryWrite overflow
+        // 4) release writes and assert both event:mouse and event:fault/OVERFLOW
         const string token = PhysicalMouseSseWebApplicationFactory.AccessToken;
         var previous = Environment.GetEnvironmentVariable("INPUTD_ACCESS_TOKEN");
         Environment.SetEnvironmentVariable("INPUTD_ACCESS_TOKEN", token);
@@ -277,11 +279,19 @@ public sealed class PhysicalMouseSseTests
 
             var handlerTask = PhysicalMouseSseEndpoint.HandleAsync(context, hub, accessToken, clock);
 
-            await WaitUntilAsync(() => body.Utf8Text.Contains("event: heartbeat", StringComparison.Ordinal), TimeSpan.FromSeconds(3));
+            await WaitUntilAsync(
+                () =>
+                {
+                    var text = body.Utf8Text;
+                    return text.Contains("event: heartbeat", StringComparison.Ordinal)
+                           && text.Contains("tagged_frames_seen", StringComparison.Ordinal)
+                           && text.Contains("\n\n", StringComparison.Ordinal);
+                },
+                TimeSpan.FromSeconds(3));
             Assert.Equal(1, hub.SubscriberCount);
+            Assert.DoesNotContain("event: mouse", body.Utf8Text, StringComparison.Ordinal);
+            Assert.DoesNotContain("event: fault", body.Utf8Text, StringComparison.Ordinal);
 
-            // Block subsequent SSE writes (mouse events) so ReadAllAsync stalls while holding no
-            // channel slot after dequeuing â€” then fill the single slot and overflow.
             body.BlockSubsequentWrites();
 
             hub.PublishFrame(new HumanInputFrame
@@ -289,7 +299,7 @@ public sealed class PhysicalMouseSseTests
                 Device = "mouse",
                 TimestampUs = 1,
                 RawDeviceHandle = "0x0",
-                Mouse = new MouseFrame { Dx = 1 }
+                Mouse = new MouseFrame { Dx = 11 }
             });
             await WaitUntilAsync(() => body.PendingWriteCount >= 1, TimeSpan.FromSeconds(3));
 
@@ -298,31 +308,33 @@ public sealed class PhysicalMouseSseTests
                 Device = "mouse",
                 TimestampUs = 2,
                 RawDeviceHandle = "0x0",
-                Mouse = new MouseFrame { Dx = 2 }
+                Mouse = new MouseFrame { Dx = 22 }
             });
-            // Channel capacity is 1 and the reader is blocked in WriteSseAsync, so this third
-            // publish must fail TryWrite and mark overflow.
+            // Capacity 1 + reader blocked in WriteSseAsync => third publish fails TryWrite.
             hub.PublishFrame(new HumanInputFrame
             {
                 Device = "mouse",
                 TimestampUs = 3,
                 RawDeviceHandle = "0x0",
-                Mouse = new MouseFrame { Dx = 3 }
+                Mouse = new MouseFrame { Dx = 33 }
             });
 
             await WaitUntilAsync(() => hub.SubscriberCount == 0, TimeSpan.FromSeconds(3));
             body.ReleaseWrites();
 
             await handlerTask.WaitAsync(TimeSpan.FromSeconds(5));
-            Assert.Contains("event: fault", body.Utf8Text, StringComparison.Ordinal);
-            Assert.Contains("OVERFLOW", body.Utf8Text, StringComparison.Ordinal);
+            var sse = body.Utf8Text;
+            Assert.Contains("event: heartbeat", sse, StringComparison.Ordinal);
+            Assert.Contains("event: mouse", sse, StringComparison.Ordinal);
+            Assert.Contains("\"dx\":11", sse, StringComparison.Ordinal);
+            Assert.Contains("event: fault", sse, StringComparison.Ordinal);
+            Assert.Contains("OVERFLOW", sse, StringComparison.Ordinal);
         }
         finally
         {
             Environment.SetEnvironmentVariable("INPUTD_ACCESS_TOKEN", previous);
         }
     }
-
     [Fact]
     public async Task PhysicalMouseSse_TaggedFramesAreExcludedFromMouseStream_AndCountedInHeartbeat()
     {
@@ -354,7 +366,7 @@ public sealed class PhysicalMouseSseTests
             InjectedTagged = true,
             Mouse = new MouseFrame { Dx = 100 }
         });
-        // Also publish via FrameObserved with InjectedTagged â€” must still be excluded.
+        // Also publish via FrameObserved with InjectedTagged ¡ª must still be excluded.
         factory.Source.RaiseFrame(new HumanInputFrame
         {
             Device = "mouse",

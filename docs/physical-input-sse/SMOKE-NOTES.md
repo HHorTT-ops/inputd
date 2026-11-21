@@ -1,22 +1,18 @@
-﻿# Physical Input SSE smoke
+﻿# Physical Input SSE smoke / attribution notes
 
-## Prior smoke (pre-attribution)
+## Pre-attribution smoke (historical)
 
-Automated Windows smoke against `GET /v1/physical-input/events`.
+`smoke-20261121-145524.json` — untagged `user32.mouse_event` stimulus before `source_class` existed.
 
-- Stimulus: untagged `user32.mouse_event` move / click / wheel (`ExtraInformation = 0`)
-- Hand-operated physical mouse: NOT_RUN
-- Recording Start: not called
-- Result: HTTP 200, 63 mouse events, 3 heartbeats, 0 faults
-- Sample timestamps and dx/dy are in `smoke-20261121-145524.json`
+- Do **not** treat as hand-operated physical-mouse PASS.
+- Under current semantics those frames would be `UNATTRIBUTED`.
 
-**Interpretation after attribution follow-up:** those 63 events must be treated as `UNATTRIBUTED` (or re-run with `source_class` in payload). They are **not** hand-operated physical-mouse PASS evidence.
+## Current attribution (Phase 1 final)
 
-## Review follow-up
+Classes: `DEVICE_ATTRIBUTED` | `EXECUTOR_INJECTED` | `UNATTRIBUTED`
 
-See `REVIEW-FOLLOWUP-20261121.md` and `INPUT-SOURCE-ATTRIBUTION.md`.
+- `DEVICE_ATTRIBUTED` = non-zero Raw Input `hDevice` only (not proof of human hand).
+- Script: `scripts/run-physical-input-attribution-tests.ps1`
+- Modes: `hand` | `untagged-mouse-event` | `tagged-sendinput` | `listen`
 
-Attribution script: `scripts/run-physical-input-attribution-tests.ps1`  
-Modes: `hand` | `untagged-mouse-event` | `tagged-sendinput` | `listen`
-
-Hand-operated physical mouse move / click / wheel: **NOT_RUN** (requires Founder).
+Hand-operated physical mouse move / click / wheel: **NOT_RUN** until Founder runs `hand` mode on real hardware. Injection must not substitute.

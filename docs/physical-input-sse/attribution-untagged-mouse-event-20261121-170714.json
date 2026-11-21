@@ -1,0 +1,27 @@
+﻿{
+    "mode":  "untagged-mouse-event",
+    "mouse_events":  24,
+    "heartbeat_events":  2,
+    "fault_events":  0,
+    "source_class_counts":  {
+                                "UNATTRIBUTED":  24,
+                                "OTHER":  0,
+                                "DEVICE_ATTRIBUTED":  0
+                            },
+    "max_tagged_frames_seen":  0,
+    "sample_events":  [
+                          "{\"sequence\":1,\"timestamp_us\":16608640000,\"dx\":20,\"dy\":0,\"held_buttons\":[],\"wheel_x\":0,\"wheel_y\":0,\"source_class\":\"UNATTRIBUTED\",\"raw_device_handle\":\"0x0\"}",
+                          "{\"sequence\":2,\"timestamp_us\":16608640000,\"dx\":0,\"dy\":15,\"held_buttons\":[],\"wheel_x\":0,\"wheel_y\":0,\"source_class\":\"UNATTRIBUTED\",\"raw_device_handle\":\"0x0\"}",
+                          "{\"sequence\":3,\"timestamp_us\":16608640000,\"dx\":0,\"dy\":0,\"held_buttons\":[\"left\"],\"wheel_x\":0,\"wheel_y\":0,\"source_class\":\"UNATTRIBUTED\",\"raw_device_handle\":\"0x0\"}",
+                          "{\"sequence\":4,\"timestamp_us\":16608640000,\"dx\":0,\"dy\":0,\"held_buttons\":[],\"wheel_x\":0,\"wheel_y\":0,\"source_class\":\"UNATTRIBUTED\",\"raw_device_handle\":\"0x0\"}",
+                          "{\"sequence\":5,\"timestamp_us\":16608640000,\"dx\":0,\"dy\":0,\"held_buttons\":[],\"wheel_x\":0,\"wheel_y\":120,\"source_class\":\"UNATTRIBUTED\",\"raw_device_handle\":\"0x0\"}",
+                          "{\"sequence\":6,\"timestamp_us\":16608640000,\"dx\":-20,\"dy\":-15,\"held_buttons\":[],\"wheel_x\":0,\"wheel_y\":0,\"source_class\":\"UNATTRIBUTED\",\"raw_device_handle\":\"0x0\"}",
+                          "{\"sequence\":7,\"timestamp_us\":16609078000,\"dx\":20,\"dy\":0,\"held_buttons\":[],\"wheel_x\":0,\"wheel_y\":0,\"source_class\":\"UNATTRIBUTED\",\"raw_device_handle\":\"0x0\"}",
+                          "{\"sequence\":8,\"timestamp_us\":16609078000,\"dx\":0,\"dy\":15,\"held_buttons\":[],\"wheel_x\":0,\"wheel_y\":0,\"source_class\":\"UNATTRIBUTED\",\"raw_device_handle\":\"0x0\"}"
+                      ],
+    "seconds":  7,
+    "base_url":  "http://127.0.0.1:17841",
+    "hand_operated":  false,
+    "recorded_at":  "2026-11-21T17:07:14.1673370+08:00",
+    "verdict_notes":  "PASS_UNATTRIBUTED_AS_EXPECTED"
+}
