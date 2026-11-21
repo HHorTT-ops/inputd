@@ -1,0 +1,34 @@
+{
+  "stimulus_label": "test-b-uu-clicks",
+  "note": "Results are scoped to this stimulus only; do not attribute TEST E/F findings to UU.",
+  "raw_events": 0,
+  "hook_events": 0,
+  "matched_one_to_one": 0,
+  "ambiguous": 0,
+  "unmatched_raw": 0,
+  "matched_near_injected_hook": 0,
+  "stats": {
+    "RawEvents": 0,
+    "HookEvents": 0,
+    "RawDropped": 0,
+    "HookDropped": 0,
+    "RawAbsolute": 0,
+    "RawRelative": 0,
+    "RawHDeviceZero": 0,
+    "RawHDeviceNonZero": 0,
+    "HookInjected": 0,
+    "HookLowerIlInjected": 0,
+    "HookExtraInfoExecutorTag": 0
+  },
+  "sample_pairs": [],
+  "answers_preliminary": {
+    "scoped_to_stimulus": "test-b-uu-clicks",
+    "llmhf_injected_seen_in_matches": false,
+    "hDevice_always_zero": false,
+    "absolute_vs_relative": {
+      "absolute": 0,
+      "relative": 0
+    },
+    "note": "Cross-check only within this stimulus; do not conclude from a single metric."
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "label": "test-b2-uu-right-clicks",
+  "controller_platform": "UNKNOWN",
+  "seconds": 10,
+  "stimulus": "none",
+  "note": "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+}

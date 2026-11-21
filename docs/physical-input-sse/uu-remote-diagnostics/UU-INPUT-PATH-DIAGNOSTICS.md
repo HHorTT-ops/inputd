@@ -2,7 +2,7 @@
 
 Task: `INPUTD-UU-REMOTE-INPUT-DIAGNOSTICS-001` + review fix `INPUTD-PHASE1.1-REVIEW-FIX-001`  
 Branch: `feat/physical-input-sse`  
-Prior tip: `675cc5c` · This fix tip: *(see git HEAD after push)*  
+Binary tip at capture: `eec0b7a`  
 Controller platform: **UNKNOWN** (not guessed)
 
 ## Engineering check
@@ -41,20 +41,49 @@ dotnet test InputExecutor.sln -c Release   -> IntegrationTests 14; Tests 57 pass
 | A / UU bundle | ZERO_EVENTS |
 | B/C/D / G | NOT_RUN |
 
-### After review fix
+### After review fix (pre–Founder UU)
 
 | Capture | Result |
 | --- | --- |
 | `*-review-fix-env-smoke` | Session env with SM_REMOTECONTROL + candidate_class + HID info |
 | `*-test-e-untagged-mouse-event-reviewfix` | PASS — raw=24/hook=24; correlation stimulus-scoped; many AMBIGUOUS (honest ties) |
 
-### Still waiting on Founder
+### Founder UU re-capture (2026-11-21, tip `eec0b7a`)
 
-Real UU interactive A–D and console physical G — **not fabricated**.
+Session (from `20261121-204346-test-b-uu-clicks/session-environment.json`): Console; `SM_REMOTESESSION`/`SM_REMOTECONTROL` false; `WTSIsRemoteSession` unavailable; virtual screen 1920×1080; device list includes `VIRTUAL_DIGITIZER` (`VIRTUAL_HID_CANDIDATE`) and `HID_DEVICE_SYSTEM_VHF*` (`VHF_DEVICE_CANDIDATE`) — **candidates only, not UU ownership**.
+
+| Capture folder | Verdict | Notes |
+| --- | --- | --- |
+| `20261121-204149-test-a-uu-move` | OBSERVED (mislabel) | raw=37/hook=37; **all** `WM_MOUSEWHEEL` / relative; hDevice=`0x0`; Injected=37; ExecutorTag=0 |
+| `20261121-204206-test-b-uu-clicks` | ZERO_EVENTS | idle window |
+| `20261121-204226-test-b-uu-clicks` | ZERO_EVENTS | idle window |
+| `20261121-204252-test-bcd-uu-clicks-wheel-drag` | ZERO_EVENTS | idle window |
+| `20261121-204323-test-uu-connectivity-probe` | OBSERVED | raw=517/hook=517; abs=453 rel=64; LBUTTON×2; wheel×60; all hDevice0 + Injected |
+| `20261121-204346-test-b-uu-clicks` | OBSERVED | raw=707/hook=707; abs=652 rel=55; LBUTTON down/up×1; wheel×51; HWHEEL×2; **no RBUTTON** |
+| `20261121-204402-test-c-uu-wheel` | OBSERVED | raw=291/hook=291; wheel×22 + HWHEEL×1 + abs moves |
+| `20261121-204418-test-d-uu-drag-select` | OBSERVED (click-like) | raw=109/hook=109; abs moves + LBUTTON down/up at **same** pt (1651,810) — looks like click, not drag path |
+| `20261121-204530-test-b2-uu-right-clicks` | ZERO_EVENTS | dedicated right-click window idle |
+
+#### Stable UU dual-channel signature (when events present)
+
+- Raw: `hDevice` always `0x0` → SSE class stays **`UNATTRIBUTED`** (not `DEVICE_ATTRIBUTED`)
+- Moves often **absolute + virtual desktop** (`usFlags=3`, `mouse_move_absolute=true`, mapped `screen_x/y`)
+- Buttons / wheel often **relative** packets (`usButtonFlags` 1/2/1024/2048) with hook `LLMHF_INJECTED=true`
+- Hook: `dwExtraInfo` ExecutorEventTag **never** set on these UU windows
+- Drops: RawDropped=0 / HookDropped=0 on all OBSERVED windows
+- Correlation: many absolute moves report as `UNMATCHED_RAW` / `AMBIGUOUS` (stimulus-honest; E/F must not be read as UU)
+
+#### Still open
+
+| Item | Status |
+| --- | --- |
+| UU right-click (RBUTTON) | **NOT_OBSERVED** this round |
+| Console physical G | **NOT_RUN** |
+| Controller platform | Still **UNKNOWN** |
 
 ## Ownership note
 
-Any non-`EXECUTOR_INJECTED` external activity remains a conservative ExternalInputActivity pause candidate — not a human claim.
+Any non-`EXECUTOR_INJECTED` external activity remains a conservative ExternalInputActivity pause candidate — not a human claim. UU-shaped traffic (hDevice=0 + Injected, no ExecutorTag) is **external injected**, not device-attributed human.
 
 ## Founder UU re-run
 

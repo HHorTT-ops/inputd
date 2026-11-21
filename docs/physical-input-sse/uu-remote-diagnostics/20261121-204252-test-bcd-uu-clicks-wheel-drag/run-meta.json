@@ -1,0 +1,7 @@
+{
+  "label": "test-bcd-uu-clicks-wheel-drag",
+  "controller_platform": "UNKNOWN",
+  "seconds": 20,
+  "stimulus": "none",
+  "note": "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+}
