@@ -55,8 +55,12 @@ dotnet test InputExecutor.sln -c Release
 | --- | --- |
 | `untagged-mouse-event` | PASS — 24× `UNATTRIBUTED`, 0× `DEVICE_ATTRIBUTED` (`attribution-untagged-mouse-event-20261121-170714.json`) |
 | `tagged-sendinput` | PASS — 0 mouse, `tagged_frames_seen=24` (`attribution-tagged-sendinput-20261121-170726.json`) |
-| `hand` move/click/wheel | **NOT_RUN** until Founder operates real hardware |
+| `hand` move/click/wheel | **RAN** — 255 mouse events, but **0× `DEVICE_ATTRIBUTED` / 255× `UNATTRIBUTED`** (`raw_device_handle=0x0`). Verdict: `EVENTS_SEEN_BUT_NOT_DEVICE_ATTRIBUTED` (`attribution-hand-move-click-wheel-20261121-175157.json`). Not a device-attribution PASS. |
 | Automated suite log | `test-results-phase1-final.txt` — IntegrationTests 14 pass; Tests 43 pass / 13 skip |
+
+### Open issue for next step (Founder / reviewer)
+
+On this host, Founder-operated physical mouse Raw Input still reports `hDevice == 0`, so non-zero-handle ⇒ `DEVICE_ATTRIBUTED` does **not** separate hand input from untagged injection here. Next work should investigate why `RAWINPUTHEADER.hDevice` is null for local physical mouse (registration flags, RIDEV_INPUTSINK, absolute/virtual devices, remote desktop, driver stack) without lowering the acceptance bar.
 
 ## 6. Out of scope
 

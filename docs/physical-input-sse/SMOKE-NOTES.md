@@ -15,4 +15,9 @@ Classes: `DEVICE_ATTRIBUTED` | `EXECUTOR_INJECTED` | `UNATTRIBUTED`
 - Script: `scripts/run-physical-input-attribution-tests.ps1`
 - Modes: `hand` | `untagged-mouse-event` | `tagged-sendinput` | `listen`
 
-Hand-operated physical mouse move / click / wheel: **NOT_RUN** until Founder runs `hand` mode on real hardware. Injection must not substitute.
+Hand-operated physical mouse (Founder, 2026-11-21): **RAN** — see `attribution-hand-move-click-wheel-20261121-175157.json`.
+
+- 255 mouse events, 0 faults
+- All classified `UNATTRIBUTED` (`raw_device_handle=0x0`); **0** `DEVICE_ATTRIBUTED`
+- Verdict: `EVENTS_SEEN_BUT_NOT_DEVICE_ATTRIBUTED` — not a device-attribution PASS
+- UI script encoding fixed (Chinese via Base64 at runtime)

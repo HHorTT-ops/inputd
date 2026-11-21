@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Attribution / stimulus helpers for physical-input SSE.
 
@@ -67,7 +67,7 @@ public static class InputStimulus {
   public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
 
   public static void UntaggedMouseEventBurst() {
-    // ExtraInformation = 0 �?must classify as UNATTRIBUTED when seen on Raw Input.
+    // ExtraInformation = 0 - must classify as UNATTRIBUTED when seen on Raw Input.
     mouse_event(MOUSEEVENTF_MOVE, 20, 0, 0, UIntPtr.Zero);
     mouse_event(MOUSEEVENTF_MOVE, 0, 15, 0, UIntPtr.Zero);
     mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, UIntPtr.Zero);
@@ -94,22 +94,29 @@ public static class InputStimulus {
 }
 "@
 
+function Get-HandInstructionText {
+  # UTF-8 payload decoded at runtime so Windows PowerShell 5.1 file encoding cannot garble UI text.
+  $b64 = "6K+35Zyo5YCS6K6h5pe25YaF55So44CQ55yf5a6e54mp55CG6byg5qCH44CR5a6M5oiQ77yaCjEpIOenu+WKqOWFieagh+iLpeW5suasoQoyKSDlt6bplK7ljZXlh7voh7PlsJHkuIDmrKEKMykg5rua5Yqo5rua6L2u6Iez5bCR5LiA5qyhCgrkuI3opoHnlKjlhbbku5bnqIvluo/ms6jlhaXovpPlhaXjgIIK56qX5Y+j5Y+v5L+d5oyB572u6aG277yb5a6M5oiQ5ZCO5peg6ZyA54K55oyJ6ZKu77yM6ISa5pys5Lya6Ieq5Yqo57uT5p2f44CC"
+  return [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($b64))
+}
+
 function Show-HandInstructionWindow([string]$text) {
   Add-Type -AssemblyName System.Windows.Forms | Out-Null
   Add-Type -AssemblyName System.Drawing | Out-Null
   $form = New-Object System.Windows.Forms.Form
-  $form.Text = "inputd physical-input SSE �?hand test"
-  $form.Width = 520
-  $form.Height = 260
+  $form.Text = "inputd physical-input SSE - hand test"
+  $form.Width = 560
+  $form.Height = 300
   $form.TopMost = $true
   $form.StartPosition = "CenterScreen"
   $label = New-Object System.Windows.Forms.Label
   $label.Dock = "Fill"
-  $label.Font = New-Object System.Drawing.Font("Segoe UI", 12)
+  $label.Font = New-Object System.Drawing.Font("Microsoft YaHei UI", 12)
   $label.Text = $text
   $label.Padding = New-Object System.Windows.Forms.Padding(16)
   $form.Controls.Add($label)
   $form.Show()
+  [System.Windows.Forms.Application]::DoEvents()
   return $form
 }
 
@@ -119,15 +126,8 @@ $token = (Get-Content $tokenPath -Raw).Trim()
 
 $handForm = $null
 if ($Mode -eq "hand") {
-  $handForm = Show-HandInstructionWindow @"
-请在倒计时内用【真实物理鼠标】完成：
-1) 移动光标若干�?
-2) 左键单击至少一�?
-3) 滚动滚轮至少一�?
-
-不要用其他程序注入输入�?
-窗口可保持置顶；完成后无需点按钮，脚本会自动结束�?
-"@
+  $handForm = Show-HandInstructionWindow (Get-HandInstructionText)
+  Write-Host "HAND WINDOW OPEN - use a REAL physical mouse now: move, left-click, wheel."
 }
 
 Add-Type -AssemblyName System.Net.Http
@@ -157,9 +157,11 @@ if ($Mode -eq "untagged-mouse-event" -or $Mode -eq "tagged-sendinput") {
 }
 try {
   while (-not $cts.IsCancellationRequested) {
+    if ($handForm) { [System.Windows.Forms.Application]::DoEvents() }
     $lineTask = $reader.ReadLineAsync()
     while (-not $lineTask.IsCompleted) {
       if ($cts.IsCancellationRequested) { break }
+      if ($handForm) { [System.Windows.Forms.Application]::DoEvents() }
       if ($stimulusBurstsLeft -gt 0 -and [datetime]::UtcNow -ge $nextStimulusUtc) {
         if ($Mode -eq "untagged-mouse-event") {
           [InputStimulus]::UntaggedMouseEventBurst()
@@ -222,16 +224,16 @@ $result = [ordered]@{
     switch ($Mode) {
       "hand" {
         if ($mouse -gt 0 -and $byClass["DEVICE_ATTRIBUTED"] -gt 0 -and $fault -eq 0) {
-          "OBSERVED_DEVICE_ATTRIBUTED_EVENTS �?still requires human confirmation that only a physical mouse was used"
+          "OBSERVED_DEVICE_ATTRIBUTED_EVENTS - still requires human confirmation that only a physical mouse was used"
         } elseif ($mouse -gt 0) {
-          "EVENTS_SEEN_BUT_NOT_DEVICE_ATTRIBUTED �?investigate hDevice"
-        } else { "NO_MOUSE_EVENTS �?NOT_PASS" }
+          "EVENTS_SEEN_BUT_NOT_DEVICE_ATTRIBUTED - investigate hDevice"
+        } else { "NO_MOUSE_EVENTS - NOT_PASS" }
       }
       "untagged-mouse-event" {
         if ($byClass["UNATTRIBUTED"] -gt 0 -and $byClass["DEVICE_ATTRIBUTED"] -eq 0) {
           "PASS_UNATTRIBUTED_AS_EXPECTED"
         } elseif ($byClass["UNATTRIBUTED"] -gt 0) {
-          "MIXED_CLASSES �?review samples; injection may coexist with real mouse motion"
+          "MIXED_CLASSES - review samples; injection may coexist with real mouse motion"
         } else { "FAIL_EXPECTED_UNATTRIBUTED" }
       }
       "tagged-sendinput" {

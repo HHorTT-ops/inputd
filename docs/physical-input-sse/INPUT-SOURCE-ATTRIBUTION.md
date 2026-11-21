@@ -66,6 +66,6 @@ SSE `event:mouse` payload fields:
 
 | Stimulus | Expected `source_class` | Notes |
 | --- | --- | --- |
-| Hand-operated physical mouse | mostly `DEVICE_ATTRIBUTED` | Founder must operate real hardware; injection must not substitute |
+| Hand-operated physical mouse | expected mostly `DEVICE_ATTRIBUTED` if OS reports non-zero `hDevice` | **Observed on Founder host 2026-11-21:** 255 events all `UNATTRIBUTED` / `hDevice=0x0` — device-handle rule insufficient on this machine |
 | inputd tagged `SendInput` | no `event:mouse`; `tagged_frames_seen` ↑ | `EXECUTOR_INJECTED` |
 | Untagged `mouse_event` | `UNATTRIBUTED` | ExtraInfo=0 |
