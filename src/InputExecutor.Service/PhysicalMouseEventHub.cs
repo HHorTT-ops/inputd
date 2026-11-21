@@ -4,8 +4,8 @@ using InputExecutor.Core.Protocol;
 namespace InputExecutor.Service;
 
 /// <summary>
-/// Fan-out hub for physical mouse Raw Input frames. Callbacks only TryWrite;
-/// overflow faults the subscriber instead of silently dropping events.
+/// Fan-out hub for mouse Raw Input frames with best-effort source attribution.
+/// Callbacks only TryWrite; overflow faults the subscriber instead of silently dropping events.
 /// </summary>
 public sealed class PhysicalMouseEventHub : IDisposable
 {
@@ -13,9 +13,16 @@ public sealed class PhysicalMouseEventHub : IDisposable
 
     private readonly object _sync = new();
     private readonly List<Subscriber> _subscribers = new();
+    private readonly int _defaultCapacity;
     private long _sequence;
     private long _taggedFramesSeen;
     private bool _disposed;
+
+    public PhysicalMouseEventHub(int defaultCapacity = DefaultCapacity)
+    {
+        if (defaultCapacity < 1) throw new ArgumentOutOfRangeException(nameof(defaultCapacity));
+        _defaultCapacity = defaultCapacity;
+    }
 
     public int SubscriberCount
     {
@@ -26,11 +33,12 @@ public sealed class PhysicalMouseEventHub : IDisposable
 
     public void ObserveTaggedFrame() => Interlocked.Increment(ref _taggedFramesSeen);
 
-    public PhysicalMouseSubscription Subscribe(int capacity = DefaultCapacity)
+    public PhysicalMouseSubscription Subscribe(int? capacity = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (capacity < 1) throw new ArgumentOutOfRangeException(nameof(capacity));
-        var channel = Channel.CreateBounded<PhysicalMouseSseMessage>(new BoundedChannelOptions(capacity)
+        var resolved = capacity ?? _defaultCapacity;
+        if (resolved < 1) throw new ArgumentOutOfRangeException(nameof(capacity));
+        var channel = Channel.CreateBounded<PhysicalMouseSseMessage>(new BoundedChannelOptions(resolved)
         {
             FullMode = BoundedChannelFullMode.Wait,
             SingleReader = true,
@@ -54,6 +62,9 @@ public sealed class PhysicalMouseEventHub : IDisposable
         if (frame.InjectedTagged)
             return;
 
+        var sourceClass = InputSourceClass.Classify(frame);
+        // EXECUTOR_INJECTED must never appear here (InjectedTagged early-return above).
+        // HUMAN_PHYSICAL and UNATTRIBUTED are both published; consumers must filter by source_class.
         var sequence = Interlocked.Increment(ref _sequence);
         var message = PhysicalMouseSseMessage.ForMouse(new PhysicalMouseEventDto
         {
@@ -63,7 +74,9 @@ public sealed class PhysicalMouseEventHub : IDisposable
             Dy = frame.Mouse.Dy,
             HeldButtons = frame.Mouse.HeldButtons.ToArray(),
             WheelX = frame.Mouse.WheelX,
-            WheelY = frame.Mouse.WheelY
+            WheelY = frame.Mouse.WheelY,
+            SourceClass = sourceClass,
+            RawDeviceHandle = frame.RawDeviceHandle ?? InputSourceClass.FormatDeviceHandle(0)
         });
         Broadcast(message);
     }
@@ -164,6 +177,8 @@ public sealed record PhysicalMouseEventDto
     public IReadOnlyList<string> HeldButtons { get; init; } = Array.Empty<string>();
     public int WheelX { get; init; }
     public int WheelY { get; init; }
+    public string SourceClass { get; init; } = InputSourceClass.Unattributed;
+    public string RawDeviceHandle { get; init; } = "0x0";
 }
 
 public sealed class PhysicalMouseSseMessage

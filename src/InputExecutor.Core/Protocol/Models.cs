@@ -315,6 +315,15 @@ public sealed record HumanInputFrame
 
     [JsonPropertyName("injected_tagged")]
     public bool InjectedTagged { get; init; }
+
+    /// <summary>
+    /// Raw Input <c>RAWINPUTHEADER.hDevice</c> as hex (e.g. <c>0x1A2B</c>), or null when unavailable.
+    /// A non-null non-zero handle means Windows associated the packet with a registered device;
+    /// it does not prove a human hand operated a physical mouse (virtual HID can also appear).
+    /// </summary>
+    [JsonPropertyName("raw_device_handle")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? RawDeviceHandle { get; init; }
 }
 
 public sealed record RecordingStartRequest

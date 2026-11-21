@@ -5,6 +5,7 @@ using InputExecutor.Core.Abstractions;
 using InputExecutor.Core.Protocol;
 using InputExecutor.Service;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -32,6 +33,7 @@ public sealed class PhysicalMouseSseTests
         {
             Device = "mouse",
             TimestampUs = 11,
+            RawDeviceHandle = "0xABC",
             Mouse = new MouseFrame { Dx = 2, Dy = -3, HeldButtons = new[] { "left" }, WheelY = 120 }
         });
         hub.PublishFrame(new HumanInputFrame
@@ -62,7 +64,46 @@ public sealed class PhysicalMouseSseTests
         Assert.Equal(-3, first.Mouse.Dy);
         Assert.Equal(new[] { "left" }, first.Mouse.HeldButtons);
         Assert.Equal(120, first.Mouse.WheelY);
+        Assert.Equal(InputSourceClass.HumanPhysical, first.Mouse.SourceClass);
+        Assert.Equal("0xABC", first.Mouse.RawDeviceHandle);
         Assert.False(subscription.Reader.TryRead(out _));
+    }
+
+    [Fact]
+    public void Hub_ClassifiesZeroDeviceHandleAsUnattributed_AndNonZeroAsHumanPhysical()
+    {
+        using var hub = new PhysicalMouseEventHub();
+        using var subscription = hub.Subscribe(capacity: 4);
+
+        hub.PublishFrame(new HumanInputFrame
+        {
+            Device = "mouse",
+            TimestampUs = 1,
+            RawDeviceHandle = "0x0",
+            Mouse = new MouseFrame { Dx = 1 }
+        });
+        hub.PublishFrame(new HumanInputFrame
+        {
+            Device = "mouse",
+            TimestampUs = 2,
+            RawDeviceHandle = null,
+            Mouse = new MouseFrame { Dx = 2 }
+        });
+        hub.PublishFrame(new HumanInputFrame
+        {
+            Device = "mouse",
+            TimestampUs = 3,
+            RawDeviceHandle = "0x1A2B",
+            Mouse = new MouseFrame { Dx = 3 }
+        });
+
+        Assert.True(subscription.Reader.TryRead(out var unattributedZero));
+        Assert.Equal(InputSourceClass.Unattributed, unattributedZero.Mouse!.SourceClass);
+        Assert.True(subscription.Reader.TryRead(out var unattributedNull));
+        Assert.Equal(InputSourceClass.Unattributed, unattributedNull.Mouse!.SourceClass);
+        Assert.True(subscription.Reader.TryRead(out var physical));
+        Assert.Equal(InputSourceClass.HumanPhysical, physical.Mouse!.SourceClass);
+        Assert.Equal("0x1A2B", physical.Mouse.RawDeviceHandle);
     }
 
     [Fact]
@@ -92,6 +133,29 @@ public sealed class PhysicalMouseSseTests
     }
 
     [Fact]
+    public void InputSourceClass_DoesNotTreatExtraInfoZeroAsHumanPhysical()
+    {
+        // ExtraInformation == 0 alone is not classification input; device handle decides.
+        var untaggedInjected = new HumanInputFrame
+        {
+            Device = "mouse",
+            InjectedTagged = false,
+            RawDeviceHandle = "0x0",
+            Mouse = new MouseFrame { Dx = 1 }
+        };
+        Assert.Equal(InputSourceClass.Unattributed, InputSourceClass.Classify(untaggedInjected));
+
+        var tagged = new HumanInputFrame
+        {
+            Device = "tagged_raw_mouse",
+            InjectedTagged = true,
+            RawDeviceHandle = "0x0",
+            Mouse = new MouseFrame { Dx = 1 }
+        };
+        Assert.Equal(InputSourceClass.ExecutorInjected, InputSourceClass.Classify(tagged));
+    }
+
+    [Fact]
     public async Task PhysicalMouseSse_ReceivesPublishedMouseWithoutRecordingStart()
     {
         using var factory = new PhysicalMouseSseWebApplicationFactory();
@@ -107,11 +171,11 @@ public sealed class PhysicalMouseSseTests
         await using var stream = await response.Content.ReadAsStreamAsync();
         using var reader = new StreamReader(stream, Encoding.UTF8);
 
-        // Drain the initial heartbeat if present, then raise one physical mouse frame.
         factory.Source.RaiseFrame(new HumanInputFrame
         {
             Device = "mouse",
             TimestampUs = 42,
+            RawDeviceHandle = "0x55",
             Mouse = new MouseFrame { Dx = 5, Dy = -1, WheelX = 0, WheelY = 0 }
         });
 
@@ -122,6 +186,8 @@ public sealed class PhysicalMouseSseTests
         Assert.Equal(5, evt.Data.GetProperty("dx").GetInt32());
         Assert.Equal(-1, evt.Data.GetProperty("dy").GetInt32());
         Assert.Equal(42, evt.Data.GetProperty("timestamp_us").GetInt64());
+        Assert.Equal(InputSourceClass.HumanPhysical, evt.Data.GetProperty("source_class").GetString());
+        Assert.Equal("0x55", evt.Data.GetProperty("raw_device_handle").GetString());
         Assert.Equal(0, factory.Source.StartRecordingCalls);
     }
 
@@ -144,8 +210,179 @@ public sealed class PhysicalMouseSseTests
         await WaitUntilAsync(() => hub.SubscriberCount == 0, TimeSpan.FromSeconds(3));
     }
 
+    [Fact]
+    public async Task PhysicalMouseSse_EventsPublishedDuringConnectAreNotLost()
+    {
+        // Subscribe happens before response flush. Once headers are readable, the hub already
+        // has this subscriber, so frames published before the client reads the body must arrive.
+        using var factory = new PhysicalMouseSseWebApplicationFactory();
+        var hub = factory.Services.GetRequiredService<PhysicalMouseEventHub>();
+        using var client = factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/v1/physical-input/events");
+        request.Headers.Add("X-Inputd-Access-Token", PhysicalMouseSseWebApplicationFactory.AccessToken);
+        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        await WaitUntilAsync(() => hub.SubscriberCount >= 1, TimeSpan.FromSeconds(3));
+
+        const int published = 32;
+        for (var i = 0; i < published; i++)
+        {
+            factory.Source.RaiseFrame(new HumanInputFrame
+            {
+                Device = "mouse",
+                TimestampUs = 1000 + i,
+                RawDeviceHandle = "0x10",
+                Mouse = new MouseFrame { Dx = i + 1, Dy = 0 }
+            });
+        }
+
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+
+        var seen = new List<int>();
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(8);
+        while (seen.Count < published && DateTime.UtcNow < deadline)
+        {
+            var evt = await ReadNextEventAsync(reader, deadline - DateTime.UtcNow);
+            if (evt.EventName == "heartbeat")
+                continue;
+            Assert.Equal("mouse", evt.EventName);
+            seen.Add(evt.Data.GetProperty("dx").GetInt32());
+        }
+
+        Assert.Equal(published, seen.Count);
+        Assert.Equal(Enumerable.Range(1, published).ToArray(), seen.ToArray());
+    }
+
+    [Fact]
+    public async Task PhysicalMouseSseHandler_OverflowWritesFault_ViaRealChannelBackpressure()
+    {
+        // Invoke the real SSE handler with a gated response body. After the initial heartbeat,
+        // block WriteAsync so the capacity-1 channel backs up; the next publish hits Broadcast's
+        // TryWrite failure path (same as production overflow). No TestServer TCP backpressure.
+        const string token = PhysicalMouseSseWebApplicationFactory.AccessToken;
+        var previous = Environment.GetEnvironmentVariable("INPUTD_ACCESS_TOKEN");
+        Environment.SetEnvironmentVariable("INPUTD_ACCESS_TOKEN", token);
+        try
+        {
+            var accessToken = new ServiceAccessToken();
+            using var hub = new PhysicalMouseEventHub(defaultCapacity: 1);
+            var clock = new HandlerTestClock { NowMicroseconds = 9_001 };
+            await using var body = new GatedResponseBodyStream();
+            using var requestAborted = new CancellationTokenSource();
+            var context = new DefaultHttpContext();
+            context.Request.Headers["X-Inputd-Access-Token"] = token;
+            context.Response.Body = body;
+            context.RequestAborted = requestAborted.Token;
+
+            var handlerTask = PhysicalMouseSseEndpoint.HandleAsync(context, hub, accessToken, clock);
+
+            await WaitUntilAsync(() => body.Utf8Text.Contains("event: heartbeat", StringComparison.Ordinal), TimeSpan.FromSeconds(3));
+            Assert.Equal(1, hub.SubscriberCount);
+
+            // Block subsequent SSE writes (mouse events) so ReadAllAsync stalls while holding no
+            // channel slot after dequeuing — then fill the single slot and overflow.
+            body.BlockSubsequentWrites();
+
+            hub.PublishFrame(new HumanInputFrame
+            {
+                Device = "mouse",
+                TimestampUs = 1,
+                RawDeviceHandle = "0x0",
+                Mouse = new MouseFrame { Dx = 1 }
+            });
+            await WaitUntilAsync(() => body.PendingWriteCount >= 1, TimeSpan.FromSeconds(3));
+
+            hub.PublishFrame(new HumanInputFrame
+            {
+                Device = "mouse",
+                TimestampUs = 2,
+                RawDeviceHandle = "0x0",
+                Mouse = new MouseFrame { Dx = 2 }
+            });
+            // Channel capacity is 1 and the reader is blocked in WriteSseAsync, so this third
+            // publish must fail TryWrite and mark overflow.
+            hub.PublishFrame(new HumanInputFrame
+            {
+                Device = "mouse",
+                TimestampUs = 3,
+                RawDeviceHandle = "0x0",
+                Mouse = new MouseFrame { Dx = 3 }
+            });
+
+            await WaitUntilAsync(() => hub.SubscriberCount == 0, TimeSpan.FromSeconds(3));
+            body.ReleaseWrites();
+
+            await handlerTask.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Contains("event: fault", body.Utf8Text, StringComparison.Ordinal);
+            Assert.Contains("OVERFLOW", body.Utf8Text, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("INPUTD_ACCESS_TOKEN", previous);
+        }
+    }
+
+    [Fact]
+    public async Task PhysicalMouseSse_TaggedFramesAreExcludedFromMouseStream_AndCountedInHeartbeat()
+    {
+        using var factory = new PhysicalMouseSseWebApplicationFactory();
+        using var client = factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/v1/physical-input/events");
+        request.Headers.Add("X-Inputd-Access-Token", PhysicalMouseSseWebApplicationFactory.AccessToken);
+        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+
+        // Drain initial heartbeat.
+        var first = await ReadNextEventAsync(reader, TimeSpan.FromSeconds(5));
+        Assert.Equal("heartbeat", first.EventName);
+
+        factory.Source.RaiseTagged(new HumanInputFrame
+        {
+            Device = "tagged_raw_mouse",
+            TimestampUs = 7,
+            InjectedTagged = true,
+            Mouse = new MouseFrame { Dx = 99, Dy = 99 }
+        });
+        factory.Source.RaiseTagged(new HumanInputFrame
+        {
+            Device = "tagged_raw_mouse",
+            TimestampUs = 8,
+            InjectedTagged = true,
+            Mouse = new MouseFrame { Dx = 100 }
+        });
+        // Also publish via FrameObserved with InjectedTagged — must still be excluded.
+        factory.Source.RaiseFrame(new HumanInputFrame
+        {
+            Device = "mouse",
+            TimestampUs = 9,
+            InjectedTagged = true,
+            Mouse = new MouseFrame { Dx = 101 }
+        });
+
+        factory.Source.RaiseFrame(new HumanInputFrame
+        {
+            Device = "mouse",
+            TimestampUs = 10,
+            RawDeviceHandle = "0x1",
+            Mouse = new MouseFrame { Dx = 3 }
+        });
+
+        var evt = await ReadNextEventAsync(reader, TimeSpan.FromSeconds(5));
+        Assert.Equal("mouse", evt.EventName);
+        Assert.Equal(3, evt.Data.GetProperty("dx").GetInt32());
+
+        var hub = factory.Services.GetRequiredService<PhysicalMouseEventHub>();
+        Assert.Equal(2, hub.TaggedFramesSeen);
+    }
+
     private static async Task<(string EventName, JsonElement Data)> ReadNextEventAsync(StreamReader reader, TimeSpan timeout)
     {
+        if (timeout <= TimeSpan.Zero)
+            throw new TimeoutException("Timed out waiting for SSE event.");
         using var cts = new CancellationTokenSource(timeout);
         string? eventName = null;
         while (!cts.IsCancellationRequested)
@@ -216,4 +453,107 @@ internal sealed class FakePhysicalInputObservationSource : IPhysicalInputObserva
 
     public void RaiseFrame(HumanInputFrame frame) => FrameObserved?.Invoke(this, frame);
     public void RaiseTagged(HumanInputFrame frame) => TaggedRawFrameObserved?.Invoke(this, frame);
+}
+
+internal sealed class HandlerTestClock : IMonotonicClock
+{
+    public long NowMicroseconds { get; set; } = 1_000_000;
+}
+
+/// <summary>
+/// Response body that can block WriteAsync after an arming point, simulating client slow-drain
+/// without depending on TestServer TCP window behavior.
+/// </summary>
+internal sealed class GatedResponseBodyStream : Stream
+{
+    private readonly MemoryStream _buffer = new();
+    private readonly object _sync = new();
+    private readonly ManualResetEventSlim _writeGate = new(initialState: true);
+    private int _pendingWrites;
+    private bool _blockSubsequent;
+    private bool _disposed;
+
+    public string Utf8Text
+    {
+        get
+        {
+            lock (_sync) return Encoding.UTF8.GetString(_buffer.ToArray());
+        }
+    }
+
+    public int PendingWriteCount => Volatile.Read(ref _pendingWrites);
+
+    public void BlockSubsequentWrites()
+    {
+        _blockSubsequent = true;
+        _writeGate.Reset();
+    }
+
+    public void ReleaseWrites() => _writeGate.Set();
+
+    public override bool CanRead => false;
+    public override bool CanSeek => false;
+    public override bool CanWrite => true;
+    public override long Length { get { lock (_sync) return _buffer.Length; } }
+    public override long Position
+    {
+        get { lock (_sync) return _buffer.Position; }
+        set => throw new NotSupportedException();
+    }
+
+    public override void Flush()
+    {
+        lock (_sync) _buffer.Flush();
+    }
+
+    public override Task FlushAsync(CancellationToken cancellationToken)
+    {
+        Flush();
+        return Task.CompletedTask;
+    }
+
+    public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+    public override void SetLength(long value) => throw new NotSupportedException();
+
+    public override void Write(byte[] buffer, int offset, int count) =>
+        WriteAsync(buffer.AsMemory(offset, count), CancellationToken.None).AsTask().GetAwaiter().GetResult();
+
+    public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (_blockSubsequent)
+        {
+            Interlocked.Increment(ref _pendingWrites);
+            try
+            {
+                while (!_writeGate.IsSet)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await Task.Delay(10, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _pendingWrites);
+            }
+        }
+
+        lock (_sync)
+        {
+            _buffer.Write(buffer.Span);
+        }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _disposed = true;
+            _writeGate.Set();
+            _writeGate.Dispose();
+            _buffer.Dispose();
+        }
+        base.Dispose(disposing);
+    }
 }

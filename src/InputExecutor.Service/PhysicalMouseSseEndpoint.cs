@@ -4,19 +4,23 @@ using InputExecutor.Core.Execution;
 
 namespace InputExecutor.Service;
 
-internal static class PhysicalMouseSseEndpoint
+public static class PhysicalMouseSseEndpoint
 {
     public static async Task HandleAsync(HttpContext context, PhysicalMouseEventHub hub, ServiceAccessToken accessToken, IMonotonicClock clock)
     {
+        // Required order: authenticate → subscribe → SSE headers → flush → heartbeat → read loop.
+        // Subscribing before Flush closes the connect-time window where Raw Input frames would
+        // otherwise arrive after the client saw headers but before this connection was attached.
         if (!context.Request.Headers.TryGetValue("X-Inputd-Access-Token", out var value) || !accessToken.Validate(value.ToString()))
             throw new InputExecutorException("UNAUTHORIZED", "A valid X-Inputd-Access-Token is required for physical input SSE.", 401);
+
+        await using var subscription = hub.Subscribe();
 
         context.Response.Headers.CacheControl = "no-cache";
         context.Response.Headers.Connection = "keep-alive";
         context.Response.ContentType = "text/event-stream";
         await context.Response.Body.FlushAsync(context.RequestAborted);
 
-        await using var subscription = hub.Subscribe();
         await WriteSseAsync(context, PhysicalMouseSseMessage.Heartbeat(clock.NowMicroseconds, hub.TaggedFramesSeen), context.RequestAborted);
 
         try
@@ -36,7 +40,7 @@ internal static class PhysicalMouseSseEndpoint
         }
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
         {
-            // client disconnected
+            // client disconnected — await using disposes the subscription
         }
     }
 
@@ -52,7 +56,9 @@ internal static class PhysicalMouseSseEndpoint
                 dy = message.Mouse.Dy,
                 held_buttons = message.Mouse.HeldButtons,
                 wheel_x = message.Mouse.WheelX,
-                wheel_y = message.Mouse.WheelY
+                wheel_y = message.Mouse.WheelY,
+                source_class = message.Mouse.SourceClass,
+                raw_device_handle = message.Mouse.RawDeviceHandle
             },
             "heartbeat" => new
             {

@@ -316,13 +316,16 @@ public sealed class WindowsRawInputRecorder : IHumanInputRecorder
             }
             var header = Marshal.PtrToStructure<NativeMethods.RAWINPUTHEADER>(buffer);
             var body = IntPtr.Add(buffer, Marshal.SizeOf<NativeMethods.RAWINPUTHEADER>());
-            if (header.dwType == NativeMethods.RIM_TYPEMOUSE) ProcessMouse(Marshal.PtrToStructure<NativeMethods.RAWMOUSE>(body));
-            else if (header.dwType == NativeMethods.RIM_TYPEKEYBOARD) ProcessKeyboard(Marshal.PtrToStructure<NativeMethods.RAWKEYBOARD>(body));
+            var deviceHandle = InputSourceClass.FormatDeviceHandle(header.hDevice);
+            if (header.dwType == NativeMethods.RIM_TYPEMOUSE)
+                ProcessMouse(Marshal.PtrToStructure<NativeMethods.RAWMOUSE>(body), deviceHandle);
+            else if (header.dwType == NativeMethods.RIM_TYPEKEYBOARD)
+                ProcessKeyboard(Marshal.PtrToStructure<NativeMethods.RAWKEYBOARD>(body), deviceHandle);
         }
         finally { Marshal.FreeHGlobal(buffer); }
     }
 
-    private void ProcessKeyboard(NativeMethods.RAWKEYBOARD keyboard)
+    private void ProcessKeyboard(NativeMethods.RAWKEYBOARD keyboard, string deviceHandle)
     {
         var tagged = keyboard.ExtraInformation == unchecked((uint)WindowsSendInputBackend.ExecutorEventTag);
         // Executor-generated input is recorded by the opt-in diagnostic hooks. It must never
@@ -339,7 +342,8 @@ public sealed class WindowsRawInputRecorder : IHumanInputRecorder
                 TimestampUs = _clock.NowMicroseconds,
                 ChangedKey = code,
                 KeyDown = isDown,
-                InjectedTagged = true
+                InjectedTagged = true,
+                RawDeviceHandle = deviceHandle
             });
             return;
         }
@@ -363,14 +367,15 @@ public sealed class WindowsRawInputRecorder : IHumanInputRecorder
                 Mouse = new MouseFrame { HeldButtons = Sorted(_heldButtons) },
                 ChangedKey = code,
                 KeyDown = isDown,
-                InjectedTagged = tagged
+                InjectedTagged = tagged,
+                RawDeviceHandle = deviceHandle
             };
             if (context is not null) QueueLocked(context, frame);
         }
         Notify(frame);
     }
 
-    private void ProcessMouse(NativeMethods.RAWMOUSE mouse)
+    private void ProcessMouse(NativeMethods.RAWMOUSE mouse, string deviceHandle)
     {
         var tagged = mouse.ulExtraInformation == unchecked((uint)WindowsSendInputBackend.ExecutorEventTag);
         var flags = mouse.buttons.usButtonFlags;
@@ -387,7 +392,8 @@ public sealed class WindowsRawInputRecorder : IHumanInputRecorder
                     Device = "tagged_raw_mouse",
                     TimestampUs = _clock.NowMicroseconds,
                     Mouse = new MouseFrame { Dx = taggedDx, Dy = taggedDy, WheelX = taggedWheelX, WheelY = taggedWheelY },
-                    InjectedTagged = true
+                    InjectedTagged = true,
+                    RawDeviceHandle = deviceHandle
                 });
             }
             return;
@@ -412,7 +418,8 @@ public sealed class WindowsRawInputRecorder : IHumanInputRecorder
                 TimestampUs = _clock.NowMicroseconds,
                 Keyboard = new KeyboardFrame { Held = Sorted(_heldKeys) },
                 Mouse = new MouseFrame { Dx = dx, Dy = dy, HeldButtons = Sorted(_heldButtons), WheelX = wheelX, WheelY = wheelY },
-                InjectedTagged = tagged
+                InjectedTagged = tagged,
+                RawDeviceHandle = deviceHandle
             };
             if (context is not null) QueueLocked(context, frame);
         }
