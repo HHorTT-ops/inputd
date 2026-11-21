@@ -1,0 +1,9 @@
+{
+  "label": "test-d-uu-drag-select",
+  "status": "FAIL",
+  "reason": "NO_DRAG_BUTTONS: Need LBUTTON down then up; downIdx=-1 upIdx=-1",
+  "evidence": {
+    "code": "NO_DRAG_BUTTONS"
+  },
+  "rule": "PASS only when required actions are evidenced; ZERO/contaminated/incomplete never PASS."
+}

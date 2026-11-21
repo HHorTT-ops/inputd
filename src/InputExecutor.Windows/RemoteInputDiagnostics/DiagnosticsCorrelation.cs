@@ -40,7 +40,11 @@ public static class DiagnosticsCorrelation
         string stimulusLabel,
         DiagnosticsStats stats)
     {
-        var pairs = MatchOneToOne(rawEvents, hookEvents);
+        // DPI APIs may report identity while UU absolute Raw maps ~½ of WH_MOUSE_LL pt.
+        // Prefer an empirical Raw↔Hook scale measured from same-timestamp pairs (never hardcode 2.0).
+        var empirical = EstimateScaleFromAbsoluteRawAndHooks(rawEvents, hookEvents);
+        var aligner = empirical.Converter;
+        var pairs = MatchOneToOne(rawEvents, hookEvents, aligner: aligner);
         var matched = pairs.Count(p => p.Status == "MATCHED");
         var ambiguous = pairs.Count(p => p.Status == "AMBIGUOUS");
         var unmatched = pairs.Count(p => p.Status == "UNMATCHED_RAW");
@@ -57,6 +61,7 @@ public static class DiagnosticsCorrelation
             ambiguous = ambiguous,
             unmatched_raw = unmatched,
             matched_near_injected_hook = matchedNearInjected,
+            empirical_alignment = empirical.Describe,
             stats,
             sample_pairs = pairs.Take(12).Select(p => new
             {
@@ -85,9 +90,83 @@ public static class DiagnosticsCorrelation
                 hDevice_always_zero = stats.RawHDeviceNonZero == 0 && stats.RawEvents > 0,
                 absolute_vs_relative = new { absolute = stats.RawAbsolute, relative = stats.RawRelative },
                 correlation_passed = matched > 0 && unmatched == 0 && ambiguous == 0,
+                empirical_scale_x = empirical.Converter?.ScaleX,
+                empirical_scale_y = empirical.Converter?.ScaleY,
                 note = "Cross-check only within this stimulus; do not conclude from a single metric. correlation_passed requires all raw events matched uniquely."
             }
         };
+    }
+
+    /// <summary>
+    /// Measures Hook.pt / Raw.screen from near-simultaneous absolute-move pairs.
+    /// Used when process DPI APIs claim identity but Raw and LL hook disagree (observed ~2:1 under UU).
+    /// </summary>
+    public static (CoordinateSpaceConverter? Converter, object Describe) EstimateScaleFromAbsoluteRawAndHooks(
+        IReadOnlyList<RawEvent> rawEvents,
+        IReadOnlyList<HookEvent> hookEvents,
+        long timeWindowUs = DefaultTimeWindowUs)
+    {
+        var ratiosX = new List<double>();
+        var ratiosY = new List<double>();
+        foreach (var raw in rawEvents)
+        {
+            if (!raw.Absolute) continue;
+            var sx = raw.ScreenX ?? raw.ScreenXMetrics;
+            var sy = raw.ScreenY ?? raw.ScreenYMetrics;
+            if (sx is null or 0 || sy is null or 0) continue;
+            if (Math.Abs(sx.Value) < 32 || Math.Abs(sy.Value) < 32) continue;
+
+            foreach (var hook in hookEvents)
+            {
+                if (hook.Message is not "WM_MOUSEMOVE") continue;
+                if (Math.Abs(hook.TimestampUs - raw.TimestampUs) > timeWindowUs) continue;
+                if (hook.PtX == 0 || hook.PtY == 0) continue;
+                // Same quadrant / sign — avoid unstable ratios across virtual-desktop origins.
+                if (Math.Sign(hook.PtX) != Math.Sign(sx.Value) && sx.Value != 0) continue;
+                if (Math.Sign(hook.PtY) != Math.Sign(sy.Value) && sy.Value != 0) continue;
+                var rx = hook.PtX / (double)sx.Value;
+                var ry = hook.PtY / (double)sy.Value;
+                if (rx is > 0.55 and < 4.0 && ry is > 0.55 and < 4.0)
+                {
+                    ratiosX.Add(rx);
+                    ratiosY.Add(ry);
+                }
+                break; // one hook sample per raw
+            }
+        }
+
+        if (ratiosX.Count < 5)
+        {
+            return (null, new
+            {
+                method = "none",
+                sample_pairs = ratiosX.Count,
+                note = "Insufficient absolute Raw↔Hook pairs to measure scale."
+            });
+        }
+
+        ratiosX.Sort();
+        ratiosY.Sort();
+        var medX = ratiosX[ratiosX.Count / 2];
+        var medY = ratiosY[ratiosY.Count / 2];
+        // Treat ~1.0 as identity (no extra aligner); only apply when clearly non-unity.
+        if (Math.Abs(medX - 1.0) < 0.08 && Math.Abs(medY - 1.0) < 0.08)
+        {
+            return (null, new
+            {
+                method = "empirical_near_identity",
+                sample_pairs = ratiosX.Count,
+                median_scale_x = medX,
+                median_scale_y = medY
+            });
+        }
+
+        var converter = CoordinateSpaceConverter.FromMeasuredScale(
+            medX,
+            medY,
+            "empirical_raw_screen_vs_hook_pt",
+            $"median of {ratiosX.Count} absolute pairs; not a hardcoded constant");
+        return (converter, converter.Describe());
     }
 
     public static List<PairResult> MatchOneToOne(
@@ -160,15 +239,29 @@ public static class DiagnosticsCorrelation
     }
 
     /// <summary>
-    /// Prefer already hook-aligned ScreenX/Y; otherwise convert metrics coords if an aligner is provided.
+    /// Prefer metrics coords when an empirical/DPI aligner is present (scale from process-view → hook).
+    /// Otherwise use ScreenX/Y as already written.
     /// </summary>
     public static (int? X, int? Y) ResolveRawPositionForMatch(RawEvent raw, CoordinateSpaceConverter? aligner)
     {
+        if (aligner is not null && !aligner.IsIdentity)
+        {
+            if (raw.ScreenXMetrics is int mx && raw.ScreenYMetrics is int my)
+            {
+                var aligned = aligner.MetricsToHookSpace(mx, my);
+                return (aligned.X, aligned.Y);
+            }
+            if (raw.ScreenX is int sx0 && raw.ScreenY is int sy0)
+            {
+                var aligned = aligner.MetricsToHookSpace(sx0, sy0);
+                return (aligned.X, aligned.Y);
+            }
+        }
         if (raw.ScreenX is int sx && raw.ScreenY is int sy)
             return (sx, sy);
-        if (aligner is not null && raw.ScreenXMetrics is int mx && raw.ScreenYMetrics is int my)
+        if (aligner is not null && raw.ScreenXMetrics is int mx2 && raw.ScreenYMetrics is int my2)
         {
-            var aligned = aligner.MetricsToHookSpace(mx, my);
+            var aligned = aligner.MetricsToHookSpace(mx2, my2);
             return (aligned.X, aligned.Y);
         }
         return (null, null);

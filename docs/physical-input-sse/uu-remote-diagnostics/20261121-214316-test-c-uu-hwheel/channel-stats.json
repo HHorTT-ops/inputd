@@ -1,0 +1,13 @@
+{
+  "RawEvents": 421,
+  "HookEvents": 421,
+  "RawDropped": 0,
+  "HookDropped": 0,
+  "RawAbsolute": 322,
+  "RawRelative": 99,
+  "RawHDeviceZero": 421,
+  "RawHDeviceNonZero": 0,
+  "HookInjected": 421,
+  "HookLowerIlInjected": 0,
+  "HookExtraInfoExecutorTag": 0
+}

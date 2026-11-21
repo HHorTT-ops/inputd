@@ -100,8 +100,21 @@ Stable UU signature when events present: `hDevice=0` → `UNATTRIBUTED`; absolut
 | `*-test-f-tagged-sendinput-phase12` | raw=24/hook=24; ExecutorTag=24 |
 | SUMMARY JSON | `SUMMARY-*.json` under this folder |
 
-**Founder UU interactive A/B/C/D/G retest under Phase 1.2 binary: PENDING.**  
-Prior ~2:1 raw/hook gap must be re-measured with `coordinate-diagnostics.json` while UU is active — do not assume current identity alignment applies to that session.
+### Founder UU retest session 2026-11-21 ~21:40 (Phase 1.2 + empirical fix)
+
+| Capture | Events | Stimulus verdict | Notes |
+| --- | --- | --- | --- |
+| Most A / B-left / B-right / C-v windows | 0 | FAIL ZERO / missing | UU not injecting in those windows — **not PASS** |
+| `214316-test-c-uu-hwheel` | 421 | FAIL (no HWHEEL) | Contaminated: moves + **vertical** wheel×93 + left×3; useful UU stream |
+| `214330-test-d-uu-drag-select` | 249 | FAIL (no buttons) | Moves only — not a drag |
+| G | — | **NOT_RUN** | |
+| Device before/after | 21=21 | — | **No** handle add/remove; VHF still candidate-only |
+
+**Coordinate finding (critical):** DPI APIs reported **identity** (Process_DPI_Unaware, dpi=96, cursor logical==physical), but live UU absolute Raw vs Hook was still ~**2.00×** (e.g. raw screen 971,352 vs hook pt 1943,705).  
+
+**Empirical alignment** (measured from Raw↔Hook pairs, not hardcoded): median scale ≈ **2.003** over 322 pairs on `214316`. After reprocess: unmatched_raw **0**; matched 130 / ambiguous 291 (dense absolute stream → honest ties). D reprocess: matched 162 / amb 87 / unmatched 0.
+
+Stimulus PASS for clean A/B-right/C-h/D drag: **still not achieved** this session (operator timing / UU intermittent).
 
 ## Ownership note
 

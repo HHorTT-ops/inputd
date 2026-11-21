@@ -109,6 +109,32 @@ public sealed class RemoteInputDiagnosticsUnitTests
     }
 
     [Fact]
+    public void EmpiricalScale_FromAbsoluteRawVsHook_EnablesPositionMatch()
+    {
+        var raw = new List<DiagnosticsCorrelation.RawEvent>();
+        var hooks = new List<DiagnosticsCorrelation.HookEvent>();
+        for (var i = 0; i < 8; i++)
+        {
+            var sx = 900 + i * 20;
+            var sy = 350 + i * 10;
+            // Space well beyond DefaultTimeWindowUs (20ms) so pairs do not compete.
+            var t = 100_000L + i * 50_000L;
+            raw.Add(new DiagnosticsCorrelation.RawEvent(
+                t, "0x0", true, 0, 0, sx, sy, 0, "move", sx, sy));
+            hooks.Add(new DiagnosticsCorrelation.HookEvent(
+                t, "WM_MOUSEMOVE", sx * 2, sy * 2, true));
+        }
+
+        var (converter, _) = DiagnosticsCorrelation.EstimateScaleFromAbsoluteRawAndHooks(raw, hooks);
+        Assert.NotNull(converter);
+        Assert.InRange(converter!.ScaleX, 1.9, 2.1);
+        Assert.InRange(converter.ScaleY, 1.9, 2.1);
+
+        var pairs = DiagnosticsCorrelation.MatchOneToOne(raw, hooks, aligner: converter);
+        Assert.All(pairs, p => Assert.Equal("MATCHED", p.Status));
+    }
+
+    [Fact]
     public void Correlation_DpiScale_AlignsMetricsCoordsBeforePositionMatch()
     {
         // Observed UU shape: metrics ~852, hook ~1704 → measured scale 2.0 (not hardcoded in production path).

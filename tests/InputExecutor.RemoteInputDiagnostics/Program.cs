@@ -69,6 +69,44 @@ if (mode is "coordinate-snapshot")
     return 0;
 }
 
+if (mode is "reprocess-correlation")
+{
+    var folder = TakeOption(argsList, "--folder") ?? beforePath;
+    if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+    {
+        Console.Error.WriteLine("reprocess-correlation requires --folder <captureDir>");
+        return 2;
+    }
+    var raw = new List<DiagnosticsCorrelation.RawEvent>();
+    var hooks = new List<DiagnosticsCorrelation.HookEvent>();
+    foreach (var line in File.ReadLines(Path.Combine(folder, "raw-input.jsonl")))
+    {
+        if (string.IsNullOrWhiteSpace(line)) continue;
+        using var doc = JsonDocument.Parse(line);
+        var ev = DiagnosticsCorrelation.TryParseRaw(doc.RootElement);
+        if (ev is not null) raw.Add(ev);
+    }
+    foreach (var line in File.ReadLines(Path.Combine(folder, "ll-hook.jsonl")))
+    {
+        if (string.IsNullOrWhiteSpace(line)) continue;
+        using var doc = JsonDocument.Parse(line);
+        var ev = DiagnosticsCorrelation.TryParseHook(doc.RootElement);
+        if (ev is not null) hooks.Add(ev);
+    }
+    DiagnosticsStats channelStats;
+    var statsPath = Path.Combine(folder, "channel-stats.json");
+    if (File.Exists(statsPath))
+        channelStats = JsonSerializer.Deserialize<DiagnosticsStats>(File.ReadAllText(statsPath))!;
+    else
+        channelStats = new DiagnosticsStats(raw.Count, hooks.Count, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    var report = DiagnosticsCorrelation.BuildReport(raw, hooks, label, channelStats);
+    var outPath = Path.Combine(folder, "correlation-report.json");
+    await File.WriteAllTextAsync(outPath, JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine($"Reprocessed: {outPath}");
+    Console.WriteLine(JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true })[..2000]);
+    return 0;
+}
+
 var runDirCapture = Path.GetFullPath(Path.Combine(outRoot, $"{DateTime.Now:yyyyMMdd-HHmmss}-{label}"));
 Directory.CreateDirectory(runDirCapture);
 await File.WriteAllTextAsync(Path.Combine(runDirCapture, "run-meta.json"),

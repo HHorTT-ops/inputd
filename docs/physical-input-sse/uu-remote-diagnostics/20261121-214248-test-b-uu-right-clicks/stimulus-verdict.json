@@ -1,0 +1,9 @@
+{
+  "label": "test-b-uu-right-clicks",
+  "status": "FAIL",
+  "reason": "MISSING_RIGHT: Need RBUTTON down\u002Bup; down=0 up=0",
+  "evidence": {
+    "code": "MISSING_RIGHT"
+  },
+  "rule": "PASS only when required actions are evidenced; ZERO/contaminated/incomplete never PASS."
+}

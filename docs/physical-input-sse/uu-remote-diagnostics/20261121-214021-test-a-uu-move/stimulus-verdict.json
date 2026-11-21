@@ -1,0 +1,9 @@
+{
+  "label": "test-a-uu-move",
+  "status": "FAIL",
+  "reason": "ZERO_EVENTS: No events \u2014 cannot PASS move-only",
+  "evidence": {
+    "code": "ZERO_EVENTS"
+  },
+  "rule": "PASS only when required actions are evidenced; ZERO/contaminated/incomplete never PASS."
+}

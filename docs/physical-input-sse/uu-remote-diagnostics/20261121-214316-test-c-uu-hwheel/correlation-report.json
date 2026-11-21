@@ -1,0 +1,274 @@
+{
+  "stimulus_label": "test-c-uu-hwheel",
+  "note": "Results are scoped to this stimulus only; do not attribute TEST E/F findings to UU.",
+  "raw_events": 421,
+  "hook_events": 421,
+  "matched_one_to_one": 130,
+  "ambiguous": 291,
+  "unmatched_raw": 0,
+  "matched_near_injected_hook": 130,
+  "empirical_alignment": {
+    "method": "empirical_raw_screen_vs_hook_pt",
+    "scale_x": 2.0034782608695654,
+    "scale_y": 2.0033167495854065,
+    "is_identity": false,
+    "detail": "median of 322 absolute pairs; not a hardcoded constant",
+    "note": "Scale is measured at runtime; never assume 2.0."
+  },
+  "stats": {
+    "RawEvents": 421,
+    "HookEvents": 421,
+    "RawDropped": 0,
+    "HookDropped": 0,
+    "RawAbsolute": 322,
+    "RawRelative": 99,
+    "RawHDeviceZero": 421,
+    "RawHDeviceNonZero": 0,
+    "HookInjected": 421,
+    "HookLowerIlInjected": 0,
+    "HookExtraInfoExecutorTag": 0
+  },
+  "sample_pairs": [
+    {
+      "Status": "AMBIGUOUS",
+      "Reason": "tied_candidates=2;score=3",
+      "raw": {
+        "TimestampUs": 33176968000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": 0,
+        "Dy": 0,
+        "ScreenX": 971,
+        "ScreenY": 352,
+        "ScreenXMetrics": 971,
+        "ScreenYMetrics": 352,
+        "ButtonFlags": 0
+      },
+      "hook": null
+    },
+    {
+      "Status": "AMBIGUOUS",
+      "Reason": "tied_candidates=2;score=3",
+      "raw": {
+        "TimestampUs": 33176984000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": -3,
+        "Dy": 0,
+        "ScreenX": 968,
+        "ScreenY": 352,
+        "ScreenXMetrics": 968,
+        "ScreenYMetrics": 352,
+        "ButtonFlags": 0
+      },
+      "hook": null
+    },
+    {
+      "Status": "AMBIGUOUS",
+      "Reason": "tied_candidates=2;score=3",
+      "raw": {
+        "TimestampUs": 33176984000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": -5,
+        "Dy": 0,
+        "ScreenX": 963,
+        "ScreenY": 352,
+        "ScreenXMetrics": 963,
+        "ScreenYMetrics": 352,
+        "ButtonFlags": 0
+      },
+      "hook": null
+    },
+    {
+      "Status": "AMBIGUOUS",
+      "Reason": "tied_candidates=3;score=3",
+      "raw": {
+        "TimestampUs": 33176984000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": -4,
+        "Dy": 0,
+        "ScreenX": 959,
+        "ScreenY": 352,
+        "ScreenXMetrics": 959,
+        "ScreenYMetrics": 352,
+        "ButtonFlags": 0
+      },
+      "hook": null
+    },
+    {
+      "Status": "AMBIGUOUS",
+      "Reason": "tied_candidates=2;score=3",
+      "raw": {
+        "TimestampUs": 33177000000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": -3,
+        "Dy": 0,
+        "ScreenX": 956,
+        "ScreenY": 352,
+        "ScreenXMetrics": 956,
+        "ScreenYMetrics": 352,
+        "ButtonFlags": 0
+      },
+      "hook": null
+    },
+    {
+      "Status": "AMBIGUOUS",
+      "Reason": "tied_candidates=3;score=3",
+      "raw": {
+        "TimestampUs": 33177000000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": -5,
+        "Dy": 0,
+        "ScreenX": 951,
+        "ScreenY": 352,
+        "ScreenXMetrics": 951,
+        "ScreenYMetrics": 352,
+        "ButtonFlags": 0
+      },
+      "hook": null
+    },
+    {
+      "Status": "AMBIGUOUS",
+      "Reason": "tied_candidates=2;score=3",
+      "raw": {
+        "TimestampUs": 33177015000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": -3,
+        "Dy": 0,
+        "ScreenX": 948,
+        "ScreenY": 352,
+        "ScreenXMetrics": 948,
+        "ScreenYMetrics": 352,
+        "ButtonFlags": 0
+      },
+      "hook": null
+    },
+    {
+      "Status": "AMBIGUOUS",
+      "Reason": "tied_candidates=2;score=3",
+      "raw": {
+        "TimestampUs": 33177031000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": -8,
+        "Dy": 0,
+        "ScreenX": 940,
+        "ScreenY": 352,
+        "ScreenXMetrics": 940,
+        "ScreenYMetrics": 352,
+        "ButtonFlags": 0
+      },
+      "hook": null
+    },
+    {
+      "Status": "AMBIGUOUS",
+      "Reason": "tied_candidates=2;score=3",
+      "raw": {
+        "TimestampUs": 33177031000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": -2,
+        "Dy": 1,
+        "ScreenX": 938,
+        "ScreenY": 353,
+        "ScreenXMetrics": 938,
+        "ScreenYMetrics": 353,
+        "ButtonFlags": 0
+      },
+      "hook": null
+    },
+    {
+      "Status": "AMBIGUOUS",
+      "Reason": "tied_candidates=2;score=3",
+      "raw": {
+        "TimestampUs": 33177046000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": -4,
+        "Dy": 0,
+        "ScreenX": 934,
+        "ScreenY": 353,
+        "ScreenXMetrics": 934,
+        "ScreenYMetrics": 353,
+        "ButtonFlags": 0
+      },
+      "hook": null
+    },
+    {
+      "Status": "MATCHED",
+      "Reason": "time\u002Bkind\u002Bposition\u002Babsolute_move",
+      "raw": {
+        "TimestampUs": 33177046000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": -5,
+        "Dy": 0,
+        "ScreenX": 929,
+        "ScreenY": 353,
+        "ScreenXMetrics": 929,
+        "ScreenYMetrics": 353,
+        "ButtonFlags": 0
+      },
+      "hook": {
+        "TimestampUs": 33177046000,
+        "Message": "WM_MOUSEMOVE",
+        "PtX": 1860,
+        "PtY": 708,
+        "Injected": true
+      }
+    },
+    {
+      "Status": "MATCHED",
+      "Reason": "time\u002Bkind\u002Bposition\u002Babsolute_move",
+      "raw": {
+        "TimestampUs": 33177062000,
+        "Kind": "move",
+        "HDevice": "0x0",
+        "Absolute": true,
+        "Dx": -4,
+        "Dy": 0,
+        "ScreenX": 925,
+        "ScreenY": 353,
+        "ScreenXMetrics": 925,
+        "ScreenYMetrics": 353,
+        "ButtonFlags": 0
+      },
+      "hook": {
+        "TimestampUs": 33177062000,
+        "Message": "WM_MOUSEMOVE",
+        "PtX": 1852,
+        "PtY": 708,
+        "Injected": true
+      }
+    }
+  ],
+  "answers_preliminary": {
+    "scoped_to_stimulus": "test-c-uu-hwheel",
+    "llmhf_injected_seen_in_matches": true,
+    "hDevice_always_zero": true,
+    "absolute_vs_relative": {
+      "absolute": 322,
+      "relative": 99
+    },
+    "correlation_passed": false,
+    "empirical_scale_x": 2.0034782608695654,
+    "empirical_scale_y": 2.0033167495854065,
+    "note": "Cross-check only within this stimulus; do not conclude from a single metric. correlation_passed requires all raw events matched uniquely."
+  }
+}

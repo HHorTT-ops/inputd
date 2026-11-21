@@ -1,0 +1,11 @@
+{
+  "label": "retest-pathcheck-e",
+  "status": "NO_RULE",
+  "reason": "No stimulus verdict rule for label",
+  "evidence": {
+    "label": "retest-pathcheck-e",
+    "raw": 189,
+    "hooks": 189
+  },
+  "rule": "PASS only when required actions are evidenced; ZERO/contaminated/incomplete never PASS."
+}

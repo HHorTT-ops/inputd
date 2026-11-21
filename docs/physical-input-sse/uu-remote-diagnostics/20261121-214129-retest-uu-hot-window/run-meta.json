@@ -1,0 +1,8 @@
+{
+  "label": "retest-uu-hot-window",
+  "controller_platform": "UNKNOWN",
+  "seconds": 15,
+  "stimulus": "none",
+  "prompt": "UU must be actively moving the cursor on THIS PC now.",
+  "note": "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
+}

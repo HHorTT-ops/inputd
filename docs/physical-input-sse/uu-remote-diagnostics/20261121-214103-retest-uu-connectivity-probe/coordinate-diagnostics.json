@@ -1,0 +1,83 @@
+{
+  "captured_at_utc": "2026-11-21T13:41:03.4312847\u002B00:00",
+  "process_dpi_awareness": "Process_DPI_Unaware",
+  "process_dpi_awareness_error": null,
+  "thread_dpi_awareness": "DPI_AWARENESS_UNAWARE",
+  "thread_dpi_awareness_error": null,
+  "dpi_for_system": 96,
+  "dpi_for_system_error": null,
+  "system_metrics": {
+    "coordinate_space": "GetSystemMetrics \u2014 process-view / may be DPI-virtualized",
+    "cx_screen": 1920,
+    "cy_screen": 1080,
+    "x_virtual": 0,
+    "y_virtual": 0,
+    "cx_virtual": 1920,
+    "cy_virtual": 1080,
+    "c_monitors": 1
+  },
+  "system_metrics_for_dpi_96": {
+    "coordinate_space": "GetSystemMetricsForDpi(dpi=96)",
+    "dpi": 96,
+    "cx_screen": 1920,
+    "cy_screen": 1080,
+    "x_virtual": 0,
+    "y_virtual": 0,
+    "cx_virtual": 1920,
+    "cy_virtual": 1080
+  },
+  "system_metrics_for_system_dpi": {
+    "coordinate_space": "GetSystemMetricsForDpi(dpi=96)",
+    "dpi": 96,
+    "cx_screen": 1920,
+    "cy_screen": 1080,
+    "x_virtual": 0,
+    "y_virtual": 0,
+    "cx_virtual": 1920,
+    "cy_virtual": 1080
+  },
+  "monitors": [
+    {
+      "device": "\\\\.\\DISPLAY1",
+      "primary": true,
+      "monitor_rect": {
+        "left": 0,
+        "top": 0,
+        "right": 1920,
+        "bottom": 1080
+      },
+      "work_rect": {
+        "left": 0,
+        "top": 0,
+        "right": 1920,
+        "bottom": 1032
+      },
+      "dpi_effective_x": 96,
+      "dpi_effective_y": 96,
+      "dpi_error": null,
+      "coordinate_space": "GetMonitorInfo rects \u2014 process-view; GetDpiForMonitor is physical effective DPI for that monitor"
+    }
+  ],
+  "cursor_pos": {
+    "x": 317,
+    "y": 488,
+    "coordinate_space": "GetCursorPos \u2014 process-view screen coords (DPI-virtualized when process is unaware)"
+  },
+  "physical_cursor_pos": {
+    "x": 317,
+    "y": 488,
+    "coordinate_space": "GetPhysicalCursorPos \u2014 physical screen coords (matches typical WH_MOUSE_LL pt when process is DPI-unaware)"
+  },
+  "physical_cursor_pos_note": null,
+  "msllhook_pt_coordinate_space": "MSLLHOOKSTRUCT.pt \u2014 screen coordinates delivered to WH_MOUSE_LL; often physical/per-monitor space and may disagree with GetSystemMetrics under DPI virtualization.",
+  "raw_absolute_coordinate_space": "RAWMOUSE absolute lLastX/lLastY are 0..65535 normalized over primary or virtual desktop; mapped with (size-1) into the chosen metrics space, then optionally aligned to hook space.",
+  "alignment": {
+    "method": "identity",
+    "scale_x": 1,
+    "scale_y": 1,
+    "is_identity": true,
+    "detail": "metrics space already matches hook space",
+    "note": "Scale is measured at runtime; never assume 2.0."
+  },
+  "note": "Do not change process DPI mode to \u0027fix\u0027 coordinates. Prefer explicit, logged conversion (LogicalToPhysical / measured scale). Never hardcode a 2x ratio."
+}

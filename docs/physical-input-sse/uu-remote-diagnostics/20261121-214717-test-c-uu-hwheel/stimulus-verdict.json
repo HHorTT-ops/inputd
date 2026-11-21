@@ -1,0 +1,9 @@
+{
+  "label": "test-c-uu-hwheel",
+  "status": "FAIL",
+  "reason": "NO_HWHEEL: No WM_MOUSEHWHEEL",
+  "evidence": {
+    "code": "NO_HWHEEL"
+  },
+  "rule": "PASS only when required actions are evidenced; ZERO/contaminated/incomplete never PASS."
+}
