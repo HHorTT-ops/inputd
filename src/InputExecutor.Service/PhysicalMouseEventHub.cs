@@ -4,8 +4,9 @@ using InputExecutor.Core.Protocol;
 namespace InputExecutor.Service;
 
 /// <summary>
-/// Fan-out hub for mouse Raw Input frames with best-effort source attribution.
+/// Fan-out hub for physical Raw Input activity (mouse + key_activity) with best-effort source attribution.
 /// Callbacks only TryWrite; overflow faults the subscriber instead of silently dropping events.
+/// Keyboard payloads never include key names, ChangedKey, held-key lists, or text.
 /// </summary>
 public sealed class PhysicalMouseEventHub : IDisposable
 {
@@ -57,8 +58,6 @@ public sealed class PhysicalMouseEventHub : IDisposable
     public void PublishFrame(HumanInputFrame frame)
     {
         if (_disposed) return;
-        if (!string.Equals(frame.Device, "mouse", StringComparison.Ordinal))
-            return;
         if (frame.InjectedTagged)
             return;
 
@@ -66,20 +65,40 @@ public sealed class PhysicalMouseEventHub : IDisposable
         // EXECUTOR_INJECTED must never appear here (InjectedTagged early-return above).
         // DEVICE_ATTRIBUTED and UNATTRIBUTED are both published; consumers must filter by source_class.
         // DEVICE_ATTRIBUTED is device-handle attribution only — not proof of human hand input.
-        var sequence = Interlocked.Increment(ref _sequence);
-        var message = PhysicalMouseSseMessage.ForMouse(new PhysicalMouseEventDto
+
+        if (string.Equals(frame.Device, "mouse", StringComparison.Ordinal))
         {
-            Sequence = sequence,
-            TimestampUs = frame.TimestampUs,
-            Dx = frame.Mouse.Dx,
-            Dy = frame.Mouse.Dy,
-            HeldButtons = frame.Mouse.HeldButtons.ToArray(),
-            WheelX = frame.Mouse.WheelX,
-            WheelY = frame.Mouse.WheelY,
-            SourceClass = sourceClass,
-            RawDeviceHandle = frame.RawDeviceHandle ?? InputSourceClass.FormatDeviceHandle(0)
-        });
-        Broadcast(message);
+            var sequence = Interlocked.Increment(ref _sequence);
+            Broadcast(PhysicalMouseSseMessage.ForMouse(new PhysicalMouseEventDto
+            {
+                Sequence = sequence,
+                TimestampUs = frame.TimestampUs,
+                Dx = frame.Mouse.Dx,
+                Dy = frame.Mouse.Dy,
+                HeldButtons = frame.Mouse.HeldButtons.ToArray(),
+                WheelX = frame.Mouse.WheelX,
+                WheelY = frame.Mouse.WheelY,
+                SourceClass = sourceClass,
+                RawDeviceHandle = frame.RawDeviceHandle ?? InputSourceClass.FormatDeviceHandle(0)
+            }));
+            return;
+        }
+
+        if (string.Equals(frame.Device, "keyboard", StringComparison.Ordinal))
+        {
+            // Activity-only: never publish ChangedKey, key names, held lists, or text.
+            if (frame.KeyDown is null)
+                return;
+            var sequence = Interlocked.Increment(ref _sequence);
+            Broadcast(PhysicalMouseSseMessage.ForKeyActivity(new PhysicalKeyActivityEventDto
+            {
+                Sequence = sequence,
+                TimestampUs = frame.TimestampUs,
+                SourceClass = sourceClass,
+                RawDeviceHandle = frame.RawDeviceHandle ?? InputSourceClass.FormatDeviceHandle(0),
+                Edge = frame.KeyDown.Value ? "down" : "up"
+            }));
+        }
     }
 
     public void PublishHeartbeat(long timestampUs)
@@ -182,12 +201,31 @@ public sealed record PhysicalMouseEventDto
     public string RawDeviceHandle { get; init; } = "0x0";
 }
 
+/// <summary>Privacy-safe keyboard activity: no key identity, no text, no held-key list.</summary>
+public sealed record PhysicalKeyActivityEventDto
+{
+    public long Sequence { get; init; }
+    public long TimestampUs { get; init; }
+    public string SourceClass { get; init; } = InputSourceClass.Unattributed;
+    public string RawDeviceHandle { get; init; } = "0x0";
+    /// <summary>Optional edge: "down" or "up".</summary>
+    public string? Edge { get; init; }
+}
+
 public sealed class PhysicalMouseSseMessage
 {
-    private PhysicalMouseSseMessage(string eventName, PhysicalMouseEventDto? mouse, long? heartbeatTimestampUs, long? taggedFramesSeen, string? errorCode, string? errorMessage)
+    private PhysicalMouseSseMessage(
+        string eventName,
+        PhysicalMouseEventDto? mouse,
+        PhysicalKeyActivityEventDto? keyActivity,
+        long? heartbeatTimestampUs,
+        long? taggedFramesSeen,
+        string? errorCode,
+        string? errorMessage)
     {
         EventName = eventName;
         Mouse = mouse;
+        KeyActivity = keyActivity;
         HeartbeatTimestampUs = heartbeatTimestampUs;
         TaggedFramesSeen = taggedFramesSeen;
         ErrorCode = errorCode;
@@ -196,17 +234,21 @@ public sealed class PhysicalMouseSseMessage
 
     public string EventName { get; }
     public PhysicalMouseEventDto? Mouse { get; }
+    public PhysicalKeyActivityEventDto? KeyActivity { get; }
     public long? HeartbeatTimestampUs { get; }
     public long? TaggedFramesSeen { get; }
     public string? ErrorCode { get; }
     public string? ErrorMessage { get; }
 
     public static PhysicalMouseSseMessage ForMouse(PhysicalMouseEventDto dto) =>
-        new("mouse", dto, null, null, null, null);
+        new("mouse", dto, null, null, null, null, null);
+
+    public static PhysicalMouseSseMessage ForKeyActivity(PhysicalKeyActivityEventDto dto) =>
+        new("key_activity", null, dto, null, null, null, null);
 
     public static PhysicalMouseSseMessage Heartbeat(long timestampUs, long taggedFramesSeen) =>
-        new("heartbeat", null, timestampUs, taggedFramesSeen, null, null);
+        new("heartbeat", null, null, timestampUs, taggedFramesSeen, null, null);
 
     public static PhysicalMouseSseMessage Fault(string code, string message) =>
-        new("fault", null, null, null, code, message);
+        new("fault", null, null, null, null, code, message);
 }

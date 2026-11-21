@@ -1,0 +1,4 @@
+dotnet test InputExecutor.sln -c Release
+IntegrationTests: 16 passed (was 14; +key_activity privacy + tagged keyboard count)
+InputExecutor.Tests: 71 passed / 13 skipped
+Failures: 0

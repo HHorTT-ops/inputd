@@ -25,7 +25,7 @@ public sealed class PhysicalMouseSseTests
     }
 
     [Fact]
-    public void Hub_BroadcastsMouse_FiltersKeyboard_AndIgnoresTaggedInjectionOnFramePath()
+    public void Hub_BroadcastsMouseAndKeyActivity_IgnoresTaggedInjection_AndNeverLeaksKeyIdentity()
     {
         using var hub = new PhysicalMouseEventHub();
         using var subscription = hub.Subscribe(capacity: 8);
@@ -40,8 +40,10 @@ public sealed class PhysicalMouseSseTests
         {
             Device = "keyboard",
             TimestampUs = 12,
+            RawDeviceHandle = "0x10",
             ChangedKey = "KeyA",
-            KeyDown = true
+            KeyDown = true,
+            Keyboard = new KeyboardFrame { Held = new[] { "KeyA", "KeyB" } }
         });
         hub.PublishFrame(new HumanInputFrame
         {
@@ -52,8 +54,16 @@ public sealed class PhysicalMouseSseTests
         });
         hub.PublishFrame(new HumanInputFrame
         {
-            Device = "mouse_hook_injected",
+            Device = "keyboard",
             TimestampUs = 14,
+            InjectedTagged = true,
+            ChangedKey = "KeyZ",
+            KeyDown = true
+        });
+        hub.PublishFrame(new HumanInputFrame
+        {
+            Device = "mouse_hook_injected",
+            TimestampUs = 15,
             InjectedTagged = true,
             Mouse = new MouseFrame { Dx = 1, Dy = 1 }
         });
@@ -66,6 +76,45 @@ public sealed class PhysicalMouseSseTests
         Assert.Equal(120, first.Mouse.WheelY);
         Assert.Equal(InputSourceClass.DeviceAttributed, first.Mouse.SourceClass);
         Assert.Equal("0xABC", first.Mouse.RawDeviceHandle);
+
+        Assert.True(subscription.Reader.TryRead(out var keyEvt));
+        Assert.Equal("key_activity", keyEvt.EventName);
+        Assert.NotNull(keyEvt.KeyActivity);
+        Assert.Equal("down", keyEvt.KeyActivity!.Edge);
+        Assert.Equal(InputSourceClass.DeviceAttributed, keyEvt.KeyActivity.SourceClass);
+        Assert.Equal("0x10", keyEvt.KeyActivity.RawDeviceHandle);
+        Assert.Equal(12, keyEvt.KeyActivity.TimestampUs);
+        // Privacy: DTO must not carry ChangedKey / held keys (only Edge + attribution fields).
+        Assert.Null(keyEvt.Mouse);
+
+        Assert.False(subscription.Reader.TryRead(out _));
+    }
+
+    [Fact]
+    public void Hub_KeyActivity_ClassifiesZeroHandleAsUnattributed_AndOmitsEdgeWithoutKeyDown()
+    {
+        using var hub = new PhysicalMouseEventHub();
+        using var subscription = hub.Subscribe(capacity: 4);
+        hub.PublishFrame(new HumanInputFrame
+        {
+            Device = "keyboard",
+            TimestampUs = 1,
+            RawDeviceHandle = "0x0",
+            ChangedKey = "Secret",
+            KeyDown = false
+        });
+        hub.PublishFrame(new HumanInputFrame
+        {
+            Device = "keyboard",
+            TimestampUs = 2,
+            ChangedKey = "Secret2"
+            // KeyDown null ? ignored
+        });
+
+        Assert.True(subscription.Reader.TryRead(out var up));
+        Assert.Equal("key_activity", up.EventName);
+        Assert.Equal("up", up.KeyActivity!.Edge);
+        Assert.Equal(InputSourceClass.Unattributed, up.KeyActivity.SourceClass);
         Assert.False(subscription.Reader.TryRead(out _));
     }
 
@@ -336,6 +385,43 @@ public sealed class PhysicalMouseSseTests
         }
     }
     [Fact]
+    public async Task PhysicalMouseSse_KeyActivityPublishedWithoutKeyIdentityFields()
+    {
+        using var factory = new PhysicalMouseSseWebApplicationFactory();
+        using var client = factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/v1/physical-input/events");
+        request.Headers.Add("X-Inputd-Access-Token", PhysicalMouseSseWebApplicationFactory.AccessToken);
+        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var first = await ReadNextEventAsync(reader, TimeSpan.FromSeconds(5));
+        Assert.Equal("heartbeat", first.EventName);
+
+        factory.Source.RaiseFrame(new HumanInputFrame
+        {
+            Device = "keyboard",
+            TimestampUs = 77,
+            RawDeviceHandle = "0x0",
+            ChangedKey = "KeyQ",
+            KeyDown = true,
+            Keyboard = new KeyboardFrame { Held = new[] { "KeyQ" } }
+        });
+
+        var evt = await ReadNextEventAsync(reader, TimeSpan.FromSeconds(5));
+        Assert.Equal("key_activity", evt.EventName);
+        Assert.Equal(77, evt.Data.GetProperty("timestamp_us").GetInt64());
+        Assert.Equal("down", evt.Data.GetProperty("edge").GetString());
+        Assert.Equal(InputSourceClass.Unattributed, evt.Data.GetProperty("source_class").GetString());
+        Assert.Equal("0x0", evt.Data.GetProperty("raw_device_handle").GetString());
+        Assert.False(evt.Data.TryGetProperty("changed_key", out _));
+        Assert.False(evt.Data.TryGetProperty("held", out _));
+        Assert.False(evt.Data.TryGetProperty("keyboard", out _));
+        Assert.DoesNotContain("KeyQ", evt.Data.GetRawText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task PhysicalMouseSse_TaggedFramesAreExcludedFromMouseStream_AndCountedInHeartbeat()
     {
         using var factory = new PhysicalMouseSseWebApplicationFactory();
@@ -366,13 +452,29 @@ public sealed class PhysicalMouseSseTests
             InjectedTagged = true,
             Mouse = new MouseFrame { Dx = 100 }
         });
-        // Also publish via FrameObserved with InjectedTagged ¡ª must still be excluded.
+        factory.Source.RaiseTagged(new HumanInputFrame
+        {
+            Device = "tagged_raw_keyboard",
+            TimestampUs = 8,
+            InjectedTagged = true,
+            ChangedKey = "KeyT",
+            KeyDown = true
+        });
+        // Also publish via FrameObserved with InjectedTagged ? must still be excluded.
         factory.Source.RaiseFrame(new HumanInputFrame
         {
             Device = "mouse",
             TimestampUs = 9,
             InjectedTagged = true,
             Mouse = new MouseFrame { Dx = 101 }
+        });
+        factory.Source.RaiseFrame(new HumanInputFrame
+        {
+            Device = "keyboard",
+            TimestampUs = 9,
+            InjectedTagged = true,
+            ChangedKey = "KeyU",
+            KeyDown = true
         });
 
         factory.Source.RaiseFrame(new HumanInputFrame
@@ -388,7 +490,7 @@ public sealed class PhysicalMouseSseTests
         Assert.Equal(3, evt.Data.GetProperty("dx").GetInt32());
 
         var hub = factory.Services.GetRequiredService<PhysicalMouseEventHub>();
-        Assert.Equal(2, hub.TaggedFramesSeen);
+        Assert.Equal(3, hub.TaggedFramesSeen);
     }
 
     private static async Task<(string EventName, JsonElement Data)> ReadNextEventAsync(StreamReader reader, TimeSpan timeout)
