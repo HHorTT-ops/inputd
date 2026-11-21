@@ -20,6 +20,7 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
     private readonly string _outputDirectory;
     private readonly string _stimulusLabel;
     private readonly MouseAbsoluteCoordinateTracker _absoluteTracker = new();
+    private readonly CoordinateSpaceConverter _coordinateAligner;
     private readonly DiagnosticChannel<RawSample> _rawChannel;
     private readonly DiagnosticChannel<HookSample> _hookChannel;
     private readonly CancellationTokenSource _lifetime = new();
@@ -58,6 +59,7 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
         _outputDirectory = outputDirectory;
         _stimulusLabel = stimulusLabel;
         Directory.CreateDirectory(outputDirectory);
+        _coordinateAligner = CoordinateSpaceConverter.FromLiveSystem();
         _rawChannel = new DiagnosticChannel<RawSample>(capacity);
         _hookChannel = new DiagnosticChannel<HookSample>(capacity);
     }
@@ -68,6 +70,12 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
         await File.WriteAllTextAsync(
             Path.Combine(_outputDirectory, "session-environment.json"),
             JsonSerializer.Serialize(env, new JsonSerializerOptions { WriteIndented = true }),
+            cancellationToken).ConfigureAwait(false);
+
+        var coords = DisplayCoordinateDiagnostics.Capture();
+        await File.WriteAllTextAsync(
+            Path.Combine(_outputDirectory, "coordinate-diagnostics.json"),
+            JsonSerializer.Serialize(coords, new JsonSerializerOptions { WriteIndented = true }),
             cancellationToken).ConfigureAwait(false);
 
         _rawWriter = Task.Run(() => WriteRawLoopAsync(Path.Combine(_outputDirectory, "raw-input.jsonl"), _lifetime.Token));
@@ -116,10 +124,22 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
             Path.Combine(_outputDirectory, "channel-stats.json"),
             JsonSerializer.Serialize(stats, new JsonSerializerOptions { WriteIndented = true })).ConfigureAwait(false);
 
-        var correlation = BuildCorrelationReport(_stimulusLabel, stats);
+        var (correlation, rawEvents, hookEvents) = BuildCorrelationReport(_stimulusLabel, stats);
         await File.WriteAllTextAsync(
             Path.Combine(_outputDirectory, "correlation-report.json"),
             JsonSerializer.Serialize(correlation, new JsonSerializerOptions { WriteIndented = true })).ConfigureAwait(false);
+
+        var verdict = StimulusVerdict.Evaluate(_stimulusLabel, rawEvents, hookEvents);
+        await File.WriteAllTextAsync(
+            Path.Combine(_outputDirectory, "stimulus-verdict.json"),
+            JsonSerializer.Serialize(new
+            {
+                label = _stimulusLabel,
+                status = verdict.Status,
+                reason = verdict.Reason,
+                evidence = verdict.Evidence,
+                rule = "PASS only when required actions are evidenced; ZERO/contaminated/incomplete never PASS."
+            }, new JsonSerializerOptions { WriteIndented = true })).ConfigureAwait(false);
     }
 
     public async ValueTask DisposeAsync()
@@ -204,7 +224,12 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
             if (header.dwType != NativeMethods.RIM_TYPEMOUSE) return;
             var body = IntPtr.Add(buffer, Marshal.SizeOf<NativeMethods.RAWINPUTHEADER>());
             var mouse = Marshal.PtrToStructure<NativeMethods.RAWMOUSE>(body);
-            var motion = _absoluteTracker.Process(mouse.usFlags, mouse.lLastX, mouse.lLastY, MouseAbsoluteCoordinateTracker.CaptureFromSystem());
+            var motion = _absoluteTracker.Process(
+                mouse.usFlags,
+                mouse.lLastX,
+                mouse.lLastY,
+                MouseAbsoluteCoordinateTracker.CaptureFromSystem(),
+                _coordinateAligner);
             var absolute = (mouse.usFlags & MouseAbsoluteCoordinateTracker.MouseMoveAbsolute) != 0;
             var sample = new RawSample(
                 _clock.NowMicroseconds,
@@ -219,6 +244,11 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
                 motion.Dy,
                 motion.ScreenX,
                 motion.ScreenY,
+                motion.ScreenXMetrics,
+                motion.ScreenYMetrics,
+                motion.AlignmentMethod,
+                motion.AlignmentScaleX,
+                motion.AlignmentScaleY,
                 motion.EstablishedBaselineOnly,
                 absolute,
                 (mouse.usFlags & MouseAbsoluteCoordinateTracker.MouseVirtualDesktop) != 0);
@@ -309,8 +339,16 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
                 usButtonData = sample.ButtonData,
                 dx = sample.Dx,
                 dy = sample.Dy,
+                screen_x_metrics = sample.ScreenXMetrics,
+                screen_y_metrics = sample.ScreenYMetrics,
                 screen_x = sample.ScreenX,
                 screen_y = sample.ScreenY,
+                screen_coordinate_note = sample.Absolute
+                    ? "screen_x/y are hook-aligned; screen_x_metrics/y_metrics are GetSystemMetrics-mapped before alignment"
+                    : null,
+                alignment_method = sample.AlignmentMethod,
+                alignment_scale_x = sample.AlignmentScaleX,
+                alignment_scale_y = sample.AlignmentScaleY,
                 established_baseline_only = sample.EstablishedBaselineOnly,
                 source_class = ClassifyRaw(deviceHandle, sample.ExtraInformation)
             };
@@ -355,7 +393,9 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
         }
     }
 
-    private object BuildCorrelationReport(string stimulusLabel, DiagnosticsStats stats)
+    private (object Report, List<DiagnosticsCorrelation.RawEvent> Raw, List<DiagnosticsCorrelation.HookEvent> Hooks) BuildCorrelationReport(
+        string stimulusLabel,
+        DiagnosticsStats stats)
     {
         var raw = ReadJsonl(Path.Combine(_outputDirectory, "raw-input.jsonl"))
             .Select(DiagnosticsCorrelation.TryParseRaw)
@@ -367,7 +407,7 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
             .Where(x => x is not null)
             .Cast<DiagnosticsCorrelation.HookEvent>()
             .ToList();
-        return DiagnosticsCorrelation.BuildReport(raw, hooks, stimulusLabel, stats);
+        return (DiagnosticsCorrelation.BuildReport(raw, hooks, stimulusLabel, stats), raw, hooks);
     }
 
     private static string ClassifyRaw(string deviceHandle, uint extraInformation)
@@ -425,6 +465,11 @@ public sealed class WindowsRemoteInputDiagnosticsSession : IAsyncDisposable
         int Dy,
         int? ScreenX,
         int? ScreenY,
+        int? ScreenXMetrics,
+        int? ScreenYMetrics,
+        string? AlignmentMethod,
+        double? AlignmentScaleX,
+        double? AlignmentScaleY,
         bool EstablishedBaselineOnly,
         bool Absolute,
         bool VirtualDesktop);

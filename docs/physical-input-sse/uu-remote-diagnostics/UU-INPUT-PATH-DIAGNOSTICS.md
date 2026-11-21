@@ -1,8 +1,8 @@
 # UU Remote Input Path Diagnostics
 
-Task: `INPUTD-UU-REMOTE-INPUT-DIAGNOSTICS-001` + review fix `INPUTD-PHASE1.1-REVIEW-FIX-001`  
+Tasks: `INPUTD-UU-REMOTE-INPUT-DIAGNOSTICS-001` · `INPUTD-PHASE1.1-REVIEW-FIX-001` · **`INPUTD-PHASE1.2-DPI-COORDINATE-ALIGNMENT-001`**  
 Branch: `feat/physical-input-sse`  
-Binary tip at capture: `eec0b7a`  
+Baseline before Phase 1.2: `3f3b954`  
 Controller platform: **UNKNOWN** (not guessed)
 
 ## Engineering check
@@ -12,83 +12,108 @@ Controller platform: **UNKNOWN** (not guessed)
 | Existing evidence | Preserved (prior folders not overwritten) |
 | Source classes | Unchanged: `EXECUTOR_INJECTED` / `DEVICE_ATTRIBUTED` / `UNATTRIBUTED` |
 | ACOS production | Not modified |
+| Process DPI mode | **Not changed** — alignment is explicit / measured |
 | Fake UU results | **None** |
+| Hardcoded 2× scale | **Forbidden** |
 
-## Phase 1.1 review fixes
+## Phase 1.2 — DPI / coordinate alignment
 
-1. **Absolute coords**: map with `(width-1)` / `(height-1)`; negative virtual origin; unit tests for primary edges, virtual four corners, 65535 clamp.
-2. **Channel drops**: `FullMode.Wait` + non-blocking `TryWrite` via `DiagnosticChannel<T>`; overflow unit test asserts exact dropped count.
-3. **Hook callback**: copies `HookSample` POD only; JSON + injected counters on background writer; always `CallNextHookEx`.
-4. **Correlation**: one-to-one by time + kind + position; ties → `AMBIGUOUS`; stimulus-scoped labels (E/F must not be read as UU).
-5. **Device candidates**: `VHF_DEVICE_CANDIDATE` / `VIRTUAL_HID_CANDIDATE` / `UNKNOWN` (+ `HID_DEVICE_SYSTEM_VHF`); RIDI_DEVICEINFO usage/VID/PID when available; never assert UU from names.
-6. **Remote indicators**: `SM_REMOTECONTROL` + optional `WTSIsRemoteSession` probe (unavailable on this host); caveats retained.
+### PART 1 — Diagnostics (`coordinate-diagnostics.json`)
 
-## Automated Release tests (this fix)
+Each capture (and `--mode coordinate-snapshot`) records:
+
+- Process DPI awareness (`GetProcessDpiAwareness`)
+- Thread DPI awareness context
+- `GetDpiForSystem`
+- `GetDpiForMonitor` per monitor (when available)
+- `GetSystemMetrics` vs `GetSystemMetricsForDpi`
+- `EnumDisplayMonitors` + `GetMonitorInfo` bounds
+- Virtual desktop range
+- `GetCursorPos` vs `GetPhysicalCursorPos`
+- Documented coordinate spaces for Raw absolute, metrics mapping, and `MSLLHOOKSTRUCT.pt`
+
+### PART 2 — Absolute mapping
+
+- Preserves `lLastX` / `lLastY` / `usFlags`
+- Distinguishes primary vs virtual desktop (`MOUSE_VIRTUAL_DESKTOP`)
+- Emits **before** (`screen_x_metrics`) and **after** (`screen_x` hook-aligned) coordinates
+- Aligns via `CoordinateSpaceConverter` (LogicalToPhysical → cursor ratio → system DPI/96 → metrics-for-dpi). **Never hardcodes 2.0**
+- Supports negative virtual origins
+
+### PART 3 — Correlation
+
+- Absolute (`usFlags` ABSOLUTE) with dx=dy=0 → kind **`move`** (no longer `other`)
+- ButtonFlags still classify button/wheel kinds first
+- **`other` is never kind-compatible** with any hook message
+- Position match uses hook-aligned coords (optional aligner for metrics-only events)
+- One-to-one; ties → `AMBIGUOUS`; no forced matches
+
+### PART 4 — Manual test flow
+
+Script prompts and `stimulus-verdict.json` now enforce:
+
+| Test | Requirement | FAIL if |
+| --- | --- | --- |
+| A | Move only | wheel/click present, or ZERO |
+| B-left / B-right | Separate left then right | missing down+up |
+| C-wheel / C-hwheel | Separate vertical then horizontal | missing message |
+| D | Hold left, move ≥200px, release | no MOVE between down/up, or travel short |
+| G | Console physical, or explicit NOT_RUN | ZERO without NOT_RUN |
+
+### PART 5 — Device compare
+
+`--mode device-snapshot` / `device-compare` diffs handle sets, names, usage, VID/PID.  
+`VHF_DEVICE_CANDIDATE` ≠ UU ownership.
+
+## Automated tests (Phase 1.2)
 
 ```
-dotnet build InputExecutor.sln -c Release  -> PASS
-dotnet test InputExecutor.sln -c Release   -> IntegrationTests 14; Tests 57 pass / 13 skip
+dotnet test InputExecutor.sln -c Release
+  InputExecutor.IntegrationTests: 14 passed
+  InputExecutor.Tests:            70 passed / 13 skipped
 ```
+
+(Prior PR text cited 57/13 before Phase 1.2 added correlation/DPI/verdict unit tests.)
 
 ## Captures (honest)
 
-### Prior (675cc5c era) — still valid baselines
+### Founder UU re-capture @ `3f3b954` (pre–Phase 1.2)
 
-| Test | Result |
-| --- | --- |
-| E untagged mouse_event | PASS — relative, hDevice=0, LLMHF_INJECTED |
-| F tagged SendInput | PASS — ExecutorTag on hook |
-| A / UU bundle | ZERO_EVENTS |
-| B/C/D / G | NOT_RUN |
+| Capture | Verdict | Notes |
+| --- | --- | --- |
+| A move | Mislabel | All wheel — not move-only |
+| B clicks | Partial | Left only; no right |
+| B2 right | ZERO_EVENTS | |
+| C wheel | OBSERVED | wheel + hwheel mixed with moves |
+| D drag | Not a drag | LBUTTON down/up same point; no MOVE between |
+| G | NOT_RUN | |
+| Correlation | **Not passed** | Absolute moves were `other`; coords ~2:1 vs hook (e.g. raw 852,436 vs hook 1706,873) |
 
-### After review fix (pre–Founder UU)
+Stable UU signature when events present: `hDevice=0` → `UNATTRIBUTED`; absolute+virtual desktop moves; buttons/wheel relative; Hook `LLMHF_INJECTED`; no ExecutorTag.
+
+### Phase 1.2 local evidence (engineering, not Founder UU retest)
 
 | Capture | Result |
 | --- | --- |
-| `*-review-fix-env-smoke` | Session env with SM_REMOTECONTROL + candidate_class + HID info |
-| `*-test-e-untagged-mouse-event-reviewfix` | PASS — raw=24/hook=24; correlation stimulus-scoped; many AMBIGUOUS (honest ties) |
+| `*-phase12-coordinate-env-coordinate-snapshot` | Process_DPI_Unaware; dpi_for_system=96; SM 1920×1080; cursor logical==physical; alignment **identity** on this host *right now* |
+| `*-test-e-untagged-mouse-event-phase12` | raw=24/hook=24; matched=4 ambiguous=20 unmatched=0 |
+| `*-test-f-tagged-sendinput-phase12` | raw=24/hook=24; ExecutorTag=24 |
+| SUMMARY JSON | `SUMMARY-*.json` under this folder |
 
-### Founder UU re-capture (2026-11-21, tip `eec0b7a`)
-
-Session (from `20261121-204346-test-b-uu-clicks/session-environment.json`): Console; `SM_REMOTESESSION`/`SM_REMOTECONTROL` false; `WTSIsRemoteSession` unavailable; virtual screen 1920×1080; device list includes `VIRTUAL_DIGITIZER` (`VIRTUAL_HID_CANDIDATE`) and `HID_DEVICE_SYSTEM_VHF*` (`VHF_DEVICE_CANDIDATE`) — **candidates only, not UU ownership**.
-
-| Capture folder | Verdict | Notes |
-| --- | --- | --- |
-| `20261121-204149-test-a-uu-move` | OBSERVED (mislabel) | raw=37/hook=37; **all** `WM_MOUSEWHEEL` / relative; hDevice=`0x0`; Injected=37; ExecutorTag=0 |
-| `20261121-204206-test-b-uu-clicks` | ZERO_EVENTS | idle window |
-| `20261121-204226-test-b-uu-clicks` | ZERO_EVENTS | idle window |
-| `20261121-204252-test-bcd-uu-clicks-wheel-drag` | ZERO_EVENTS | idle window |
-| `20261121-204323-test-uu-connectivity-probe` | OBSERVED | raw=517/hook=517; abs=453 rel=64; LBUTTON×2; wheel×60; all hDevice0 + Injected |
-| `20261121-204346-test-b-uu-clicks` | OBSERVED | raw=707/hook=707; abs=652 rel=55; LBUTTON down/up×1; wheel×51; HWHEEL×2; **no RBUTTON** |
-| `20261121-204402-test-c-uu-wheel` | OBSERVED | raw=291/hook=291; wheel×22 + HWHEEL×1 + abs moves |
-| `20261121-204418-test-d-uu-drag-select` | OBSERVED (click-like) | raw=109/hook=109; abs moves + LBUTTON down/up at **same** pt (1651,810) — looks like click, not drag path |
-| `20261121-204530-test-b2-uu-right-clicks` | ZERO_EVENTS | dedicated right-click window idle |
-
-#### Stable UU dual-channel signature (when events present)
-
-- Raw: `hDevice` always `0x0` → SSE class stays **`UNATTRIBUTED`** (not `DEVICE_ATTRIBUTED`)
-- Moves often **absolute + virtual desktop** (`usFlags=3`, `mouse_move_absolute=true`, mapped `screen_x/y`)
-- Buttons / wheel often **relative** packets (`usButtonFlags` 1/2/1024/2048) with hook `LLMHF_INJECTED=true`
-- Hook: `dwExtraInfo` ExecutorEventTag **never** set on these UU windows
-- Drops: RawDropped=0 / HookDropped=0 on all OBSERVED windows
-- Correlation: many absolute moves report as `UNMATCHED_RAW` / `AMBIGUOUS` (stimulus-honest; E/F must not be read as UU)
-
-#### Still open
-
-| Item | Status |
-| --- | --- |
-| UU right-click (RBUTTON) | **NOT_OBSERVED** this round |
-| Console physical G | **NOT_RUN** |
-| Controller platform | Still **UNKNOWN** |
+**Founder UU interactive A/B/C/D/G retest under Phase 1.2 binary: PENDING.**  
+Prior ~2:1 raw/hook gap must be re-measured with `coordinate-diagnostics.json` while UU is active — do not assume current identity alignment applies to that session.
 
 ## Ownership note
 
-Any non-`EXECUTOR_INJECTED` external activity remains a conservative ExternalInputActivity pause candidate — not a human claim. UU-shaped traffic (hDevice=0 + Injected, no ExecutorTag) is **external injected**, not device-attributed human.
+Any non-`EXECUTOR_INJECTED` external activity remains a conservative ExternalInputActivity pause candidate — not a human claim. UU-shaped traffic stays **external injected**, not `DEVICE_ATTRIBUTED`.
 
-## Founder UU re-run
+## Founder retest
 
 ```powershell
 cd <inputd>
 dotnet build InputExecutor.sln -c Release
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-uu-remote-input-diagnostics.ps1 -ControllerPlatform UNKNOWN
 ```
+
+Follow on-screen prompts (device before/after, A move-only, B-left, B-right, C-v, C-h, D drag≥200px, G or NOT_RUN).  
+Do not mark PASS for actions that did not occur.

@@ -297,9 +297,92 @@ internal static partial class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool GetCursorPos(out POINT point);
 
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetPhysicalCursorPos(out POINT point);
+
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool GetWindowRect(IntPtr hWnd, out RECT rect);
+
+    [LibraryImport("user32.dll")]
+    internal static partial IntPtr GetDesktopWindow();
+
+    [LibraryImport("user32.dll")]
+    internal static partial int GetSystemMetricsForDpi(int nIndex, uint dpi);
+
+    [LibraryImport("user32.dll")]
+    internal static partial uint GetDpiForSystem();
+
+    [LibraryImport("user32.dll")]
+    internal static partial IntPtr GetThreadDpiAwarenessContext();
+
+    [LibraryImport("user32.dll")]
+    internal static partial int GetAwarenessFromDpiAwarenessContext(IntPtr value);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool LogicalToPhysicalPointForPerMonitorDPI(IntPtr hWnd, ref POINT point);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool PhysicalToLogicalPointForPerMonitorDPI(IntPtr hWnd, ref POINT point);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr lprcClip, MonitorEnumProc callback, IntPtr dwData);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFOEX info);
+
+    [DllImport("shcore.dll")]
+    internal static extern int GetDpiForMonitor(IntPtr hMonitor, MONITOR_DPI_TYPE dpiType, out uint dpiX, out uint dpiY);
+
+    [DllImport("shcore.dll")]
+    internal static extern int GetProcessDpiAwareness(IntPtr hProcess, out PROCESS_DPI_AWARENESS value);
+
+    [LibraryImport("kernel32.dll")]
+    internal static partial IntPtr GetCurrentProcess();
+
+    internal const int MONITORINFOF_PRIMARY = 1;
+
+    internal enum PROCESS_DPI_AWARENESS
+    {
+        Process_DPI_Unaware = 0,
+        Process_System_DPI_Aware = 1,
+        Process_Per_Monitor_DPI_Aware = 2
+    }
+
+    internal enum MONITOR_DPI_TYPE
+    {
+        MDT_Effective_DPI = 0,
+        MDT_Angular_DPI = 1,
+        MDT_Raw_DPI = 2
+    }
+
+    internal enum DPI_AWARENESS
+    {
+        DPI_AWARENESS_INVALID = -1,
+        DPI_AWARENESS_UNAWARE = 0,
+        DPI_AWARENESS_SYSTEM_AWARE = 1,
+        DPI_AWARENESS_PER_MONITOR_AWARE = 2
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct MONITORINFOEX
+    {
+        internal int cbSize;
+        internal RECT rcMonitor;
+        internal RECT rcWork;
+        internal uint dwFlags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        internal string szDevice;
+    }
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal delegate bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
 
     [LibraryImport("kernel32.dll", EntryPoint = "GetModuleHandleW", StringMarshalling = StringMarshalling.Utf16)]
     internal static partial IntPtr GetModuleHandle(string? moduleName);

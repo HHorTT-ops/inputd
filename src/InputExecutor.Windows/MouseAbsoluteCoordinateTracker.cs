@@ -1,3 +1,5 @@
+using InputExecutor.Windows.RemoteInputDiagnostics;
+
 namespace InputExecutor.Windows;
 
 /// <summary>
@@ -5,6 +7,8 @@ namespace InputExecutor.Windows;
 /// Relative packets pass through unchanged; absolute/relative mode switches reset the baseline.
 /// Mapping uses (width-1)/(height-1) so 0 and 65535 land on the inclusive desktop edges,
 /// including negative virtual-desktop origins.
+/// Optional <see cref="CoordinateSpaceConverter"/> aligns metrics-space pixels to WH_MOUSE_LL space
+/// without changing process DPI awareness and without hardcoding a 2× ratio.
 /// </summary>
 public sealed class MouseAbsoluteCoordinateTracker
 {
@@ -39,9 +43,22 @@ public sealed class MouseAbsoluteCoordinateTracker
         int OriginLeft,
         int OriginTop,
         int OriginWidth,
-        int OriginHeight);
+        int OriginHeight,
+        int? ScreenXMetrics = null,
+        int? ScreenYMetrics = null,
+        string? AlignmentMethod = null,
+        double? AlignmentScaleX = null,
+        double? AlignmentScaleY = null);
 
-    public Result Process(ushort usFlags, int lastX, int lastY, ScreenMetrics metrics)
+    public Result Process(ushort usFlags, int lastX, int lastY, ScreenMetrics metrics) =>
+        Process(usFlags, lastX, lastY, metrics, converter: null);
+
+    public Result Process(
+        ushort usFlags,
+        int lastX,
+        int lastY,
+        ScreenMetrics metrics,
+        CoordinateSpaceConverter? converter)
     {
         var absolute = (usFlags & MouseMoveAbsolute) != 0;
         if (!absolute)
@@ -61,8 +78,30 @@ public sealed class MouseAbsoluteCoordinateTracker
         if (width <= 0) width = 1;
         if (height <= 0) height = 1;
 
-        var screenX = MapNormalizedAxis(lastX, left, width);
-        var screenY = MapNormalizedAxis(lastY, top, height);
+        int metricsX, metricsY, screenX, screenY;
+        string? alignMethod = null;
+        double? scaleX = null, scaleY = null;
+        if (converter is not null)
+        {
+            var mapped = converter.MapAbsoluteAxes(lastX, lastY, virtualDesktop, metrics);
+            metricsX = mapped.MetricsX;
+            metricsY = mapped.MetricsY;
+            screenX = mapped.HookX;
+            screenY = mapped.HookY;
+            alignMethod = converter.Method;
+            scaleX = converter.ScaleX;
+            scaleY = converter.ScaleY;
+        }
+        else
+        {
+            metricsX = MapNormalizedAxis(lastX, left, width);
+            metricsY = MapNormalizedAxis(lastY, top, height);
+            screenX = metricsX;
+            screenY = metricsY;
+            alignMethod = "identity_no_converter";
+            scaleX = 1;
+            scaleY = 1;
+        }
 
         var originChanged = !_haveOrigin
             || left != _originLeft
@@ -81,14 +120,16 @@ public sealed class MouseAbsoluteCoordinateTracker
         {
             _lastScreenX = screenX;
             _lastScreenY = screenY;
-            return new Result(0, 0, true, virtualDesktop, true, screenX, screenY, left, top, width, height);
+            return new Result(0, 0, true, virtualDesktop, true, screenX, screenY, left, top, width, height,
+                metricsX, metricsY, alignMethod, scaleX, scaleY);
         }
 
         var dx = screenX - _lastScreenX.Value;
         var dy = screenY - _lastScreenY.Value;
         _lastScreenX = screenX;
         _lastScreenY = screenY;
-        return new Result(dx, dy, true, virtualDesktop, false, screenX, screenY, left, top, width, height);
+        return new Result(dx, dy, true, virtualDesktop, false, screenX, screenY, left, top, width, height,
+            metricsX, metricsY, alignMethod, scaleX, scaleY);
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using InputExecutor.Core.Abstractions;
 using InputExecutor.Windows;
 using InputExecutor.Windows.RemoteInputDiagnostics;
@@ -10,11 +11,15 @@ if (!OperatingSystem.IsWindows())
 }
 
 var argsList = args.ToList();
+var mode = TakeOption(argsList, "--mode") ?? "capture"; // capture | device-snapshot | device-compare | coordinate-snapshot
 var seconds = TakeInt(argsList, "--seconds") ?? 8;
 var label = TakeOption(argsList, "--label") ?? "capture";
 var controller = TakeOption(argsList, "--controller") ?? "UNKNOWN";
 var outRoot = TakeOption(argsList, "--out") ?? Path.Combine("docs", "physical-input-sse", "uu-remote-diagnostics");
 var stimulus = TakeOption(argsList, "--stimulus") ?? "none"; // none | untagged-mouse-event | tagged-sendinput
+var beforePath = TakeOption(argsList, "--before");
+var afterPath = TakeOption(argsList, "--after");
+var prompt = TakeOption(argsList, "--prompt");
 
 if (controller is not ("UNKNOWN" or "WINDOWS_CONTROLLER" or "MACOS_CONTROLLER"))
 {
@@ -22,24 +27,69 @@ if (controller is not ("UNKNOWN" or "WINDOWS_CONTROLLER" or "MACOS_CONTROLLER"))
     return 2;
 }
 
-var runDir = Path.GetFullPath(Path.Combine(outRoot, $"{DateTime.Now:yyyyMMdd-HHmmss}-{label}"));
-Directory.CreateDirectory(runDir);
-await File.WriteAllTextAsync(Path.Combine(runDir, "run-meta.json"),
-    System.Text.Json.JsonSerializer.Serialize(new
+Directory.CreateDirectory(outRoot);
+
+if (mode is "device-snapshot")
+{
+    var runDir = Path.GetFullPath(Path.Combine(outRoot, $"{DateTime.Now:yyyyMMdd-HHmmss}-{label}-device-snapshot"));
+    Directory.CreateDirectory(runDir);
+    var snap = DeviceSnapshotCompare.CaptureDevicesOnly();
+    var path = Path.Combine(runDir, "session-environment.json");
+    await File.WriteAllTextAsync(path, JsonSerializer.Serialize(snap, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine($"Device snapshot: {path}");
+    Console.WriteLine($"devices={snap.RawInputDevices.Count}");
+    return 0;
+}
+
+if (mode is "device-compare")
+{
+    if (string.IsNullOrWhiteSpace(beforePath) || string.IsNullOrWhiteSpace(afterPath))
+    {
+        Console.Error.WriteLine("device-compare requires --before and --after session-environment.json paths");
+        return 2;
+    }
+    var runDir = Path.GetFullPath(Path.Combine(outRoot, $"{DateTime.Now:yyyyMMdd-HHmmss}-{label}-device-compare"));
+    Directory.CreateDirectory(runDir);
+    var cmp = DeviceSnapshotCompare.CompareFiles(beforePath, afterPath);
+    var path = Path.Combine(runDir, "device-compare.json");
+    await File.WriteAllTextAsync(path, JsonSerializer.Serialize(cmp, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine($"Device compare: {path}");
+    Console.WriteLine(JsonSerializer.Serialize(cmp, new JsonSerializerOptions { WriteIndented = true }));
+    return 0;
+}
+
+if (mode is "coordinate-snapshot")
+{
+    var runDir = Path.GetFullPath(Path.Combine(outRoot, $"{DateTime.Now:yyyyMMdd-HHmmss}-{label}-coordinate-snapshot"));
+    Directory.CreateDirectory(runDir);
+    var coords = DisplayCoordinateDiagnostics.Capture();
+    var path = Path.Combine(runDir, "coordinate-diagnostics.json");
+    await File.WriteAllTextAsync(path, JsonSerializer.Serialize(coords, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine($"Coordinate diagnostics: {path}");
+    return 0;
+}
+
+var runDirCapture = Path.GetFullPath(Path.Combine(outRoot, $"{DateTime.Now:yyyyMMdd-HHmmss}-{label}"));
+Directory.CreateDirectory(runDirCapture);
+await File.WriteAllTextAsync(Path.Combine(runDirCapture, "run-meta.json"),
+    JsonSerializer.Serialize(new
     {
         label,
         controller_platform = controller,
         seconds,
         stimulus,
+        prompt,
         note = "SM_REMOTESESSION=false does not prove absence of UU/third-party remote control."
-    }, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+    }, new JsonSerializerOptions { WriteIndented = true }));
 
-Console.WriteLine($"Output: {runDir}");
+Console.WriteLine($"Output: {runDirCapture}");
 Console.WriteLine($"Listening {seconds}s label={label} controller={controller} stimulus={stimulus}");
 if (stimulus == "none")
-    Console.WriteLine("Perform the requested mouse action NOW (UU remote or local as instructed).");
+{
+    Console.WriteLine(prompt ?? "Perform the requested mouse action NOW (UU remote or local as instructed).");
+}
 
-await using var session = new WindowsRemoteInputDiagnosticsSession(new SystemMonotonicClock(), runDir, stimulusLabel: label);
+await using var session = new WindowsRemoteInputDiagnosticsSession(new SystemMonotonicClock(), runDirCapture, stimulusLabel: label);
 await session.StartAsync();
 
 var deadline = DateTime.UtcNow.AddSeconds(seconds);
@@ -59,7 +109,10 @@ while (DateTime.UtcNow < deadline)
 
 await session.StopAsync();
 var stats = session.SnapshotStats();
-Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(stats, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+Console.WriteLine(JsonSerializer.Serialize(stats, new JsonSerializerOptions { WriteIndented = true }));
+var verdictPath = Path.Combine(runDirCapture, "stimulus-verdict.json");
+if (File.Exists(verdictPath))
+    Console.WriteLine("Verdict: " + File.ReadAllText(verdictPath));
 Console.WriteLine("Done.");
 return 0;
 
